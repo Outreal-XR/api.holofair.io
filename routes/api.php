@@ -14,6 +14,12 @@ Route::prefix('v1')->group(function () {
     Route::post('/signup', [AuthController::class, 'signup']);
     Route::post('/signin', [AuthController::class, 'login']);
 
+    Route::get("/test", function () {
+        return response()->json([
+            "message" => "Hello World"
+        ]);
+    });
+
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::middleware('auth:sanctum')->group(function () {
 
