@@ -33,7 +33,8 @@ class AuthController extends Controller
             'last_name' => $request->last_name,
             'phone_number' => $request->has('phone_number') ? $request->phone_number : null,
             'email' => strtolower($request->email),
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            "phone_number" => $request->has("phone_number") ? $request->phone_number : null,
         ]);
 
         $user->assignRole('user');
