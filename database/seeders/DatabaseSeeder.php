@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         $uuid = Str::uuid("uuid")->toString();
         $slug = Str::slug($uuid);
         $metaverse = Metaverse::create([
+            "id" => 8319026,
             "userid" => 1,
             "uuid" => $uuid,
             "slug" => $slug,

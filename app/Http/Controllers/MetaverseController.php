@@ -150,7 +150,7 @@ class MetaverseController extends Controller
         }
     }
 
-    public function getMetaverseAddrassables(Request $request)
+    public function getMetaverseAddrassablesLinks(Request $request)
     {
         $validation = Validator::make($request->all(), [
             "uuid" => "required|string",
