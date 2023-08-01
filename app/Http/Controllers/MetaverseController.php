@@ -32,7 +32,7 @@ class MetaverseController extends Controller
         if ($validation->fails()) {
             return response()->json([
                 "message" => $validation->errors()->first()
-            ], Response::HTTP_BAD_REQUEST);
+            ], 400);
         }
 
         if ($request->has("template_id")) {
@@ -41,7 +41,7 @@ class MetaverseController extends Controller
             if (!$template) {
                 return response()->json([
                     "message" => "Template not found"
-                ], Response::HTTP_NOT_FOUND);
+                ], 404);
             }
         } else {
             //blank template
@@ -127,7 +127,7 @@ class MetaverseController extends Controller
             return response()->json([
                 "message" => "Metaverse created successfully",
                 "metaverse" => $newMetaverse
-            ], Response::HTTP_CREATED);
+            ], 200);
         } catch (\Exception $e) {
             DB::rollback();
 
@@ -146,7 +146,7 @@ class MetaverseController extends Controller
                     "line" => $e->getLine(),
                     "file" => $e->getFile(),
                 ]
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            ], 500);
         }
     }
 
@@ -161,7 +161,7 @@ class MetaverseController extends Controller
             return response()->json([
                 "message" => "Validation error",
                 "errors" => $validation->errors()
-            ], Response::HTTP_BAD_REQUEST);
+            ], 400);
         }
 
         $metaverse = Metaverse::where('uuid', $request->uuid)->first();
@@ -169,7 +169,7 @@ class MetaverseController extends Controller
         if (!$metaverse) {
             return response()->json([
                 "message" => "Metaverse not found"
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         $platform = Platform::find($request->platformid);
@@ -177,7 +177,7 @@ class MetaverseController extends Controller
         if (!$platform) {
             return response()->json([
                 "message" => "Platform not found"
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         $addressablesIds = $metaverse->addressables->pluck('id')->toArray();
@@ -186,7 +186,7 @@ class MetaverseController extends Controller
 
         return response()->json([
             "addressables" => $addressablesUrls
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     public function getMetaversesByUser()
@@ -195,7 +195,7 @@ class MetaverseController extends Controller
 
         return response()->json([
             "data" => $metaverses
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     public function getMetaverseById($id)
@@ -205,11 +205,11 @@ class MetaverseController extends Controller
         if (!$metaverse) {
             return response()->json([
                 "message" => "Metaverse not found"
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         return response()->json([
             "data" => $metaverse
-        ], Response::HTTP_OK);
+        ], 200);
     }
 }

@@ -4,10 +4,10 @@ use App\Http\Controllers\{
     Auth\AuthController,
     TempController,
     Auth\EmailVerificationController,
+    GeneralController,
     MetaverseController,
     TemplateController
 };
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -45,6 +45,10 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix("templates")->group(function () {
                 Route::get("/", [TemplateController::class, "index"]);
+            });
+
+            Route::prefix("props")->group(function () {
+                Route::post("/upload", [GeneralController::class, "uploadPropImages"]);
             });
         });
     });

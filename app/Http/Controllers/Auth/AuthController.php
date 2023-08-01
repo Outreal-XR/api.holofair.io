@@ -25,7 +25,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->first(), Response::HTTP_BAD_REQUEST);
+            return response()->json($validator->errors()->first(), 400);
         }
 
         $user = User::create([
@@ -53,7 +53,7 @@ class AuthController extends Controller
                 'permissions' => $user->getAllPermissions()->pluck('name'),
                 'token' => $user->createToken('auth_token')->plainTextToken
             ]
-        ], Response::HTTP_CREATED);
+        ], 200);
     }
 
     //login
@@ -65,7 +65,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->first(), Response::HTTP_BAD_REQUEST);
+            return response()->json($validator->errors()->first(), 400);
         }
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
@@ -82,11 +82,11 @@ class AuthController extends Controller
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                     'token' => $user->createToken($user->email)->plainTextToken
                 ]
-            ], Response::HTTP_OK);
+            ], 200);
         } else {
             return response()->json([
                 'message' => 'Invalid credentials'
-            ], Response::HTTP_UNAUTHORIZED);
+            ], 403);
         }
     }
 
@@ -100,7 +100,7 @@ class AuthController extends Controller
                 'last_name' => $request->user()->last_name,
                 'email' => $request->user()->email,
             ]
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     public function update(Request $request)
@@ -116,7 +116,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->first(), Response::HTTP_BAD_REQUEST);
+            return response()->json($validator->errors()->first(), 400);
         }
 
         $user = $request->user();
@@ -137,7 +137,7 @@ class AuthController extends Controller
             if (!Hash::check($request->current_password, $user->password)) {
                 return response()->json([
                     'message' => 'Current password is incorrect'
-                ], Response::HTTP_UNAUTHORIZED);
+                ], 403);
             }
 
             $user->password = Hash::make($request->password);
@@ -162,6 +162,6 @@ class AuthController extends Controller
                     'avatar' => asset($user->avatar)
                 ]
             ]
-        ], Response::HTTP_OK);
+        ], 200);
     }
 }

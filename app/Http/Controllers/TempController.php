@@ -28,13 +28,13 @@ class TempController extends Controller
                         'description' => $temp->description
                     ];
                 })
-            ], Response::HTTP_OK);
+            ], 200);
         }
 
         return response()->json([
             'message' => 'No temps found',
             'data' => []
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     /**
@@ -49,7 +49,7 @@ class TempController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->first(), Response::HTTP_BAD_REQUEST);
+            return response()->json($validator->errors()->first(), 400);
         }
 
         $imageName = time() . '.' . $request->thumbnail->extension();
@@ -66,13 +66,13 @@ class TempController extends Controller
         if (!$temp) {
             return response()->json([
                 'message' => 'An error occurred while creating temp',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            ], 500);
         }
 
         return response()->json([
             'message' => 'Temp created successfully',
             'data' => $temp,
-        ], Response::HTTP_CREATED);
+        ], 200);
     }
 
     /**
@@ -85,7 +85,7 @@ class TempController extends Controller
         if (!$temp) {
             return response()->json([
                 'message' => 'Temp not found',
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         return response()->json([
@@ -96,7 +96,7 @@ class TempController extends Controller
                 'thumbnail' => asset($temp->thumbnail),
                 'description' => $temp->description
             ],
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     /**
@@ -111,7 +111,7 @@ class TempController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors()->first(), Response::HTTP_BAD_REQUEST);
+            return response()->json($validator->errors()->first(), 400);
         }
 
         $temp = Temp::find($id);
@@ -119,13 +119,13 @@ class TempController extends Controller
         if (!$temp) {
             return response()->json([
                 'message' => 'Temp not found',
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         if (Auth::id() !== $temp->user_id) {
             return response()->json([
                 'message' => 'You cannot edit this temp',
-            ], Response::HTTP_UNAUTHORIZED);
+            ], 403);
         }
 
         $data = [
@@ -151,7 +151,7 @@ class TempController extends Controller
         return response()->json([
             'message' => 'Temp updated successfully',
             'data' => $temp,
-        ], Response::HTTP_OK);
+        ], 200);
     }
 
     /**
@@ -164,13 +164,13 @@ class TempController extends Controller
         if (!$temp) {
             return response()->json([
                 'message' => 'Temp not found',
-            ], Response::HTTP_NOT_FOUND);
+            ], 404);
         }
 
         if (Auth::id() !== $temp->user_id) {
             return response()->json([
                 'message' => 'You cannot delete this temp',
-            ], Response::HTTP_UNAUTHORIZED);
+            ], 403);
         }
 
         $prevImage = $temp->thumbnail;
@@ -182,6 +182,6 @@ class TempController extends Controller
 
         return response()->json([
             'message' => 'Temp deleted successfully',
-        ], Response::HTTP_OK);
+        ], 200);
     }
 }
