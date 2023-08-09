@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\MetaverseResource;
 use App\Models\ItemPerRoom;
 use App\Models\Metaverse;
 use App\Models\Platform;
@@ -126,7 +127,7 @@ class MetaverseController extends Controller
 
             return response()->json([
                 "message" => "Metaverse created successfully",
-                "metaverse" => $newMetaverse
+                "metaverse" => MetaverseResource::make($newMetaverse)
             ], 200);
         } catch (\Exception $e) {
             DB::rollback();
@@ -189,12 +190,19 @@ class MetaverseController extends Controller
         ], 200);
     }
 
-    public function getMetaversesByUser()
+    public function getMetaversesByUser(Request $request)
     {
-        $metaverses = Metaverse::where('userid', Auth::id())->get();
+
+        $metaverses = Metaverse::where('userid', Auth::id())->orderBy('created_at', 'desc');
+
+        if ($request->has("limit")) {
+            $metaverses = $metaverses->limit($request->limit);
+        }
+
+        $metaverses = $metaverses->get();
 
         return response()->json([
-            "data" => $metaverses
+            "data" => MetaverseResource::collection($metaverses)
         ], 200);
     }
 
@@ -208,8 +216,10 @@ class MetaverseController extends Controller
             ], 404);
         }
 
+
+
         return response()->json([
-            "data" => $metaverse
+            "data" => MetaverseResource::make($metaverse)
         ], 200);
     }
 }

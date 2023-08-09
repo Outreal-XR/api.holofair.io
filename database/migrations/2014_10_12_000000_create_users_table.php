@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('first_name');
             $table->string('last_name');
+            $table->uuid('uuid')->unique();
             $table->string('phone_number', 20)->nullable()->unique();
             $table->string('email')->unique();
             $table->string('avatar')->default('images/avatars/default.jpg');

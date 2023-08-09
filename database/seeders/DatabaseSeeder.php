@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             "uuid" => $uuid,
             "slug" => $slug,
             "name" => "Metaverse",
-            "thumbnail" => "images/metaverses/thumbnails/1/deafult.jpg",
+            "thumbnail" => "images/metaverses/thumbnails/default/default.jpg",
             "description" => "Metaverse Template 1",
             "url" => "https://metaverse.studio/1",
 
@@ -43,7 +43,7 @@ class DatabaseSeeder extends Seeder
             "uuid" => $uuid,
             "slug" => $slug,
             "name" => "Blank",
-            "thumbnail" => "images/metaverses/thumbnails/1/deafult.jpg",
+            "thumbnail" => "images/metaverses/thumbnails/default/default.jpg",
             "description" => "Blank Template",
             "url" => "https://metaverse.studio/1",
 

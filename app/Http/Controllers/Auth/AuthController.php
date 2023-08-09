@@ -48,6 +48,8 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
+                    "uuid" => $user->uuid,
+                    "registered_at" => $user->created_at
                 ],
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -77,6 +79,8 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'first_name' => $user->first_name,
                         'last_name' => $user->last_name,
+                        "uuid" => $user->uuid,
+                        "registered_at" => $user->created_at
                     ],
                     'roles' => $user->getRoleNames(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -85,8 +89,8 @@ class AuthController extends Controller
             ], 200);
         } else {
             return response()->json([
-                'message' => 'Invalid credentials'
-            ], 403);
+                'message' => 'Invalid credentials, please try again!'
+            ], 401);
         }
     }
 
