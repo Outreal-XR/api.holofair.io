@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -14,7 +15,7 @@ class GeneralController extends Controller
         $validator = Validator::make($request->all(), [
             "images" => "array|required|min:1|max:100",
             "images.*.key" => "required|string",
-            "images.*.file" => "required|image|mimes:jpeg,png,jpg,gif,svg|max:2048",
+            "images.*.file" => "required|string",
         ]);
 
         if ($validator->fails()) {
@@ -24,15 +25,30 @@ class GeneralController extends Controller
         }
 
         //upload images to s3
-        $images = [];
+        $props = [];
         foreach ($request->images as $image) {
+
             $path = "props/images";
-            $imageName = $image["key"] . "." . $image["file"]->extension();
-            $uploadPath =  Storage::disk("s3")->putFileAs($path, $image["file"], $imageName);
+            $file = $image["file"];
+            $key = $image["key"];
+            $extension = 'png';
+            $filename = $key . '.' . $extension;
+            $file = base64_decode($file);
+
+            $finalPath = $path . '/' . $filename;
+
+            //upload locally
+            // Storage::disk('public')->put($finalPath, $file, 'public');
+
+            Storage::disk('s3')->put($finalPath, $file, 'public');
+
+
+            $props[] = Storage::disk('s3')->url($finalPath);
         }
 
         return response()->json([
             "message" => "Images uploaded successfully",
+            "props" => $props
         ], 200);
     }
 }
