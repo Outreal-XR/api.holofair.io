@@ -26,9 +26,9 @@ class GeneralController extends Controller
 
         //upload images to s3
         $props = [];
+        $path = "props/images";
         foreach ($request->images as $image) {
 
-            $path = "props/images";
             $file = $image["file"];
             $key = $image["key"];
             $extension = 'png';
@@ -37,11 +37,7 @@ class GeneralController extends Controller
 
             $finalPath = $path . '/' . $filename;
 
-            //upload locally
-            // Storage::disk('public')->put($finalPath, $file, 'public');
-
-            Storage::disk('s3')->put($finalPath, $file, 'public');
-
+            $fullPath = Storage::disk('s3')->put($finalPath,  $file,  'public');
 
             $props[] = Storage::disk('s3')->url($finalPath);
         }
@@ -50,5 +46,29 @@ class GeneralController extends Controller
             "message" => "Images uploaded successfully",
             "props" => $props
         ], 200);
+    }
+
+    public function test(Request $request)
+    {
+        $folder = "props/images";
+        $file = $request->image;
+
+        $filename = time() . '-' . $file->getClientOriginalName();
+
+        try {
+            $path = Storage::disk('s3')->put($folder . '/' . $filename, file_get_contents($file));
+            $filePath = Storage::disk("s3")->url($folder . '/' . $filename);
+
+            return response()->json([
+                "message" => "Success",
+                "upload" => $filePath,
+                "path" => $path
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => $e->getMessage(),
+                "line" => $e->getLine()
+            ], 400);
+        }
     }
 }
