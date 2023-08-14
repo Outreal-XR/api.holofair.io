@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::post("/test/upload", [GeneralController::class, 'test']);
+    Route::post("/test-binary/upload", [GeneralController::class, 'testBinary']);
 
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::middleware('auth:sanctum')->group(function () {
@@ -49,9 +50,9 @@ Route::prefix('v1')->group(function () {
             Route::get("/", [TemplateController::class, "index"]);
         });
 
-        Route::prefix("props")->group(function () {
-            Route::post("/upload", [GeneralController::class, "uploadPropImages"]);
-        });
         // });
+    });
+    Route::prefix("props")->group(function () {
+        Route::post("/upload", [GeneralController::class, "uploadPropImages"]);
     });
 });
