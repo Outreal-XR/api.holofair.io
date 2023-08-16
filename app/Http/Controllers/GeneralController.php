@@ -36,12 +36,10 @@ class GeneralController extends Controller
         $s3Destination = 'props/images/';
         $extension = '.png';
 
-        //give write and read permissions to the folder
-        chmod(public_path($localDecodedFilePath), 0777);
+        $storageFolder = storage_path("app/public/" . $localDecodedFilePath);
 
-
-        if (!file_exists(public_path($localDecodedFilePath))) {
-            mkdir(public_path($localDecodedFilePath), 0777, true);
+        if (!file_exists($storageFolder)) {
+            mkdir($storageFolder, 0777, true);
         }
 
         //upload images to s3
@@ -52,7 +50,7 @@ class GeneralController extends Controller
         $filename = $key . $extension;
         $decodedContent = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $file));
 
-        $localFile = public_path($localDecodedFilePath . $filename);
+        $localFile = $storageFolder . $filename;
 
         //save the file locally
         $save = file_put_contents($localFile, $decodedContent);
