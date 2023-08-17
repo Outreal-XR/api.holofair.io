@@ -41,7 +41,6 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('metaverses')->group(function () {
             Route::post('/', [MetaverseController::class, 'createMetaverseFromTemplate']);
-            Route::post('/addrassables', [MetaverseController::class, 'getMetaverseAddrassablesLinks']);
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"]);
         });
@@ -54,5 +53,8 @@ Route::prefix('v1')->group(function () {
     });
     Route::prefix("props")->group(function () {
         Route::post("/upload", [GeneralController::class, "uploadPropImages"]);
+    });
+    Route::prefix('metaverses')->group(function () {
+        Route::get('/{metaverse_id}/platforms/{platform_id}/addrassables', [MetaverseController::class, 'getMetaverseAddrassablesLinks']);
     });
 });

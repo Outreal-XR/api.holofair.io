@@ -151,21 +151,9 @@ class MetaverseController extends Controller
         }
     }
 
-    public function getMetaverseAddrassablesLinks(Request $request)
+    public function getMetaverseAddrassablesLinks($metaverse_id, $platform_id)
     {
-        $validation = Validator::make($request->all(), [
-            "uuid" => "required|string",
-            "platformid" => "required|integer",
-        ]);
-
-        if ($validation->fails()) {
-            return response()->json([
-                "message" => "Validation error",
-                "errors" => $validation->errors()
-            ], 400);
-        }
-
-        $metaverse = Metaverse::where('uuid', $request->uuid)->first();
+        $metaverse = Metaverse::find($metaverse_id);
 
         if (!$metaverse) {
             return response()->json([
@@ -173,7 +161,7 @@ class MetaverseController extends Controller
             ], 404);
         }
 
-        $platform = Platform::find($request->platformid);
+        $platform = Platform::find($platform_id);
 
         if (!$platform) {
             return response()->json([
