@@ -270,7 +270,7 @@ class MetaverseController extends Controller
     {
         $validation = Validator::make($request->all(), [
             "email" => "required|email",
-            "role" => "required|string|in:can_view, can_edit"
+            "role" => "required|string|in:can_view,can_edit"
         ]);
 
         if ($validation->fails()) {
