@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\InvitedUserResource;
 use App\Http\Resources\MetaverseResource;
+use App\Http\Resources\UserResource;
+use App\Models\InvitedUser;
 use App\Models\ItemPerRoom;
 use App\Models\Metaverse;
 use App\Models\Platform;
 use App\Models\Template;
+use App\Models\User;
 use App\Models\VariablePerItem;
 use App\Models\VariablePerRoom;
+use App\Notifications\InviteToMetaverse;
 use App\Traits\MediaTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -258,6 +263,99 @@ class MetaverseController extends Controller
         return response()->json([
             "message" => "Metaverse updated successfully",
             "metaverse" => MetaverseResource::make($metaverse)
+        ], 200);
+    }
+
+    public function sendInvite(Request $request, string $id)
+    {
+        $validation = Validator::make($request->all(), [
+            "email" => "required|email",
+            "role" => "required|string|in:can_view, can_edit"
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                "message" => $validation->errors()->first()
+            ], 400);
+        }
+
+        $metaverse = Metaverse::find($id);
+
+        if (!$metaverse) {
+            return response()->json([
+                "message" => "Metaverse not found"
+            ], 404);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                "message" => "User not found"
+            ], 404);
+        }
+
+        //update or create the invite
+        $invitedUser = InvitedUser::updateOrCreate(
+            [
+                'metaverse_id' => $metaverse->id,
+                'email' => $user->email,
+                "invited_by" => Auth::id(),
+            ],
+            [
+                'can_edit' => $request->role === "can_edit",
+                'can_view' => $request->role === "can_view",
+            ]
+        );
+
+        //send email
+
+        return response()->json([
+            "message" => "Invite sent successfully",
+        ], 200);
+    }
+
+    public function getInvites($id)
+    {
+        $metaverse = Metaverse::find($id);
+
+        if (!$metaverse) {
+            return response()->json([
+                "message" => "Metaverse not found"
+            ], 404);
+        }
+
+        $users = $metaverse->invitedUsers;
+        $owner = $metaverse->user;
+
+        return response()->json([
+            "data" => [
+                "owner" => UserResource::make($owner),
+                "users" => InvitedUserResource::collection($users)
+            ]
+        ], 200);
+    }
+
+    public function getSharedMetaverses(Request $request)
+    {
+        $metaverses = Metaverse::whereHas('invitedUsers', function ($query) {
+            $query->where('email', Auth::user()->email)->where('is_accepted', true);
+        })->orderBy('created_at', 'desc');
+
+        $total = $metaverses->count();
+
+        if ($request->has("limit")) {
+            $metaverses = $metaverses->limit($request->limit);
+        }
+
+        $metaverses = $metaverses->get();
+
+        return response()->json([
+            "data" => [
+                "metaverses" =>
+                MetaverseResource::collection($metaverses),
+                "total" => $total
+            ]
         ], 200);
     }
 }

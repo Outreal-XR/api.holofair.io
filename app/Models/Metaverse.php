@@ -33,4 +33,9 @@ class Metaverse extends Model
     {
         return $this->belongsTo(User::class, 'userid');
     }
+
+    public function invitedUsers()
+    {
+        return $this->hasMany(InvitedUser::class, 'metaverse_id');
+    }
 }

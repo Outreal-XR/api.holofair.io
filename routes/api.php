@@ -42,8 +42,11 @@ Route::prefix('v1')->group(function () {
         Route::prefix('metaverses')->group(function () {
             Route::post('/', [MetaverseController::class, 'createMetaverseFromTemplate']);
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
-            Route::get("/{id}", [MetaverseController::class, "getMetaverseById"]);
-            Route::post('update/{id}', [MetaverseController::class, 'updateMetaverse']);
+            Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');
+            Route::post('/{id}/update', [MetaverseController::class, 'updateMetaverse'])->where('id', '[0-9]+');
+            Route::post('/{id}/users/invite', [MetaverseController::class, 'sendInvite'])->where('id', '[0-9]+');
+            Route::get('/{id}/users/invites', [MetaverseController::class, 'getInvites'])->where('id', '[0-9]+');
+            Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
         });
 
         Route::prefix("templates")->group(function () {
