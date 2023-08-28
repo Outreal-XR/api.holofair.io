@@ -28,4 +28,9 @@ class Metaverse extends Model
     {
         return $this->hasMany(Template::class, 'metaverseid');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'userid');
+    }
 }

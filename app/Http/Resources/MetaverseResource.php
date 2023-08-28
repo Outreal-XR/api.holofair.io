@@ -22,7 +22,8 @@ class MetaverseResource extends JsonResource
             'created_at' => $this->created_at,
             'url' => $this->url,
             'uuid' => $this->uuid,
-            'userid' => $this->userid
+            'userid' => $this->userid,
+            "user" => $this->user,
         ];
     }
 }

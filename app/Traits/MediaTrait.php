@@ -8,6 +8,6 @@ trait MediaTrait
     {
         $filename = time() . "-" . $file->getClientOriginalName();
         $file->move(public_path($path), $filename);
-        return $path;
+        return $path . '/' . $filename;
     }
 }

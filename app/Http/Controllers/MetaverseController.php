@@ -13,6 +13,7 @@ use App\Traits\MediaTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Str;
@@ -204,10 +205,59 @@ class MetaverseController extends Controller
             ], 404);
         }
 
-
-
         return response()->json([
             "data" => MetaverseResource::make($metaverse)
+        ], 200);
+    }
+
+    public function updateMetaverse(Request $request, string $id)
+    {
+
+        $validation = Validator::make($request->all(), [
+            "thumbnail" => "nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048",
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                "message" => $validation->errors()->first()
+            ], 400);
+        }
+
+        $metaverse = Metaverse::find($id);
+
+        if (!$metaverse) {
+            return response()->json([
+                "message" => "Metaverse not found"
+            ], 404);
+        }
+
+        if ($request->has('thumbnail') && !empty($request->thumbnail)) {
+
+            $thumbnail = $this->uploadMedia($request->thumbnail, "images/metaverses/thumbnails/" . Auth::id());
+
+            //remove old thumbnail
+            if ($metaverse->thumbnail) {
+                if (File::exists(public_path($metaverse->thumbnail))) {
+                    File::delete(public_path($metaverse->thumbnail));
+                }
+            }
+
+            $metaverse->thumbnail = $thumbnail;
+        }
+
+        if ($request->has('name')) {
+            $metaverse->name = $request->name;
+        }
+
+        if ($request->has('description')) {
+            $metaverse->description = $request->description;
+        }
+
+        $metaverse->save();
+
+        return response()->json([
+            "message" => "Metaverse updated successfully",
+            "metaverse" => MetaverseResource::make($metaverse)
         ], 200);
     }
 }

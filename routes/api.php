@@ -43,6 +43,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [MetaverseController::class, 'createMetaverseFromTemplate']);
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"]);
+            Route::post('update/{id}', [MetaverseController::class, 'updateMetaverse']);
         });
 
         Route::prefix("templates")->group(function () {
