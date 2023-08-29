@@ -53,7 +53,7 @@ class MetaverseController extends Controller
         } else {
             //blank template
             $template = Template::whereHas('metaverse', function ($query) {
-                $query->where('name', 'Blank');
+                $query->where('name', 'LIKE', '%Blank%');
             })->first();
         }
 
