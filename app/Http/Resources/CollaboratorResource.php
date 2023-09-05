@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class InvitedUserResource extends JsonResource
+class CollaboratorResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -19,9 +19,10 @@ class InvitedUserResource extends JsonResource
             'user' => new UserResource($this->user),
             'inviter' => new UserResource($this->inviter),
             "metaverse" => $this->whenLoaded('metaverse'),
-            'is_accepted' => $this->is_accepted,
-            'can_edit' => $this->can_edit,
-            'can_view' => $this->can_view,
+            'status' => $this->status,
+            'role' => $this->role,
+            'token' => $this->token,
+            'token_expiry' => $this->token_expiry,
         ];
     }
 }

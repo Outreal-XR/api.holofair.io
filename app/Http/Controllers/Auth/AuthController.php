@@ -168,4 +168,31 @@ class AuthController extends Controller
             ]
         ], 200);
     }
+
+    public function searchEmails(Request $request)
+    {
+        if (!$request->search) {
+            return response()->json([
+                'message' => 'Please provide a search query',
+                'data' => []
+            ], 200);
+        }
+
+        //remove spaces
+        $search = str_replace(' ', '', $request->search);
+
+        $emails = User::where('email', 'LIKE', '%' . $search . '%')->pluck('email');
+
+        if ($emails->isEmpty()) {
+            return response()->json([
+                'message' => 'No emails found',
+                'data' => []
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Emails retrieved successfully',
+            'data' => $emails
+        ], 200);
+    }
 }

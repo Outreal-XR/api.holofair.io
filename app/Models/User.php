@@ -60,4 +60,9 @@ class User extends Authenticatable implements MustVerifyEmail
             $user->uuid = Str::uuid();
         });
     }
+
+    public function invites()
+    {
+        return $this->hasMany(Collaborator::class, 'email', 'email');
+    }
 }

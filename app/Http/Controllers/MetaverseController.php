@@ -2,25 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\InvitedUserResource;
+use App\Http\Resources\CollaboratorResource;
 use App\Http\Resources\MetaverseResource;
 use App\Http\Resources\UserResource;
-use App\Models\InvitedUser;
+use App\Models\Collaborator;
 use App\Models\ItemPerRoom;
 use App\Models\Metaverse;
 use App\Models\Platform;
 use App\Models\Template;
 use App\Models\User;
 use App\Models\VariablePerItem;
-use App\Models\VariablePerRoom;
-use App\Notifications\InviteToMetaverse;
 use App\Traits\MediaTrait;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Str;
 
 class MetaverseController extends Controller
@@ -270,7 +268,7 @@ class MetaverseController extends Controller
     {
         $validation = Validator::make($request->all(), [
             "email" => "required|email",
-            "role" => "required|string|in:can_view,can_edit"
+            "role" => "required|string|in:viewer,editor,admin"
         ]);
 
         if ($validation->fails()) {
@@ -295,27 +293,44 @@ class MetaverseController extends Controller
             ], 404);
         }
 
+        if ($metaverse->userid !== Auth::id()) {
+            //send a link to the user to view the metaverse
+
+            return response()->json([
+                "message" => "Link has been sent",
+            ], 200);
+        }
+
         //update or create the invite
-        $invitedUser = InvitedUser::updateOrCreate(
-            [
-                'metaverse_id' => $metaverse->id,
-                'email' => $user->email,
-                "invited_by" => Auth::id(),
-            ],
-            [
-                'can_edit' => $request->role === "can_edit",
-                'can_view' => $request->role === "can_view",
-            ]
-        );
+        $collaborator = Collaborator::where('email', $request->email)->where('metaverse_id', $metaverse->id)->first();
 
-        //send email
+        $invitation = new Collaborator();
+        if (!$collaborator) {
+            $invitation->metaverse_id = $metaverse->id;
+            $invitation->email = $request->email;
+            $invitation->role = $request->role;
+            $invitation->invited_by = Auth::id();
+            $invitation->token = time() . Str::random(40);
+            $invitation->token_expiry = Carbon::now()->addHours(24);
+            $invitation->save();
 
-        return response()->json([
-            "message" => "Invite sent successfully",
-        ], 200);
+            //send email
+
+            return response()->json([
+                "message" => "Invite sent successfully",
+            ], 200);
+        } else {
+            $invitation->role = $request->role;
+            $invitation->token = time() . Str::random(40);
+            $invitation->token_expiry = Carbon::now()->addHours(24);
+
+            return response()->json([
+                "message" => "Invite updated successfully",
+            ], 200);
+        }
     }
 
-    public function getInvites($id)
+    public function getCollaborators($id)
     {
         $metaverse = Metaverse::find($id);
 
@@ -325,21 +340,21 @@ class MetaverseController extends Controller
             ], 404);
         }
 
-        $users = $metaverse->invitedUsers;
+        $collaborators = $metaverse->collaborators;
         $owner = $metaverse->user;
 
         return response()->json([
             "data" => [
                 "owner" => UserResource::make($owner),
-                "users" => InvitedUserResource::collection($users)
+                "collaborators" => CollaboratorResource::collection($collaborators)
             ]
         ], 200);
     }
 
     public function getSharedMetaverses(Request $request)
     {
-        $metaverses = Metaverse::whereHas('invitedUsers', function ($query) {
-            $query->where('email', Auth::user()->email)->where('is_accepted', true);
+        $metaverses = Metaverse::whereHas('collaborators', function ($query) {
+            $query->where('email', Auth::user()->email)->where('status', 'accepted');
         })->orderBy('created_at', 'desc');
 
         $total = $metaverses->count();
@@ -356,6 +371,43 @@ class MetaverseController extends Controller
                 MetaverseResource::collection($metaverses),
                 "total" => $total
             ]
+        ], 200);
+    }
+
+    public function searchEmails(Request $request, $id)
+    {
+        if (!$request->search) {
+            return response()->json([
+                'message' => 'Please provide a search query',
+                'data' => []
+            ], 200);
+        }
+
+        $metaverse = Metaverse::find($id);
+
+        if (!$metaverse) {
+            return response()->json([
+                'message' => 'Metaverse not found',
+                'data' => []
+            ], 404);
+        }
+
+        //remove spaces
+        $search = str_replace(' ', '', $request->search);
+        $emails = User::where('id', '!=', Auth::id())
+            ->where('id', '!=', $metaverse->user_id)
+            ->where('email', 'LIKE', '%' . $search . '%')->pluck('email');
+
+        if ($emails->isEmpty()) {
+            return response()->json([
+                'message' => 'No emails found',
+                'data' => []
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Emails retrieved successfully',
+            'data' => $emails
         ], 200);
     }
 }

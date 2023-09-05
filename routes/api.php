@@ -31,6 +31,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
         Route::post('/user/update', [AuthController::class, 'update']);
 
+        Route::prefix('users')->group(function () {
+        });
+
         Route::prefix('temps')->group(function () {
             Route::post('/', [TempController::class, 'store']);
             Route::get('/{id}', [TempController::class, 'show']);
@@ -45,8 +48,9 @@ Route::prefix('v1')->group(function () {
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');
             Route::post('/{id}/update', [MetaverseController::class, 'updateMetaverse'])->where('id', '[0-9]+');
             Route::post('/{id}/users/invite', [MetaverseController::class, 'sendInvite'])->where('id', '[0-9]+');
-            Route::get('/{id}/users/invites', [MetaverseController::class, 'getInvites'])->where('id', '[0-9]+');
+            Route::get('/{id}/collaborators', [MetaverseController::class, 'getCollaborators'])->where('id', '[0-9]+');
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
+            Route::get('/{id}/users/emails/', [MetaverseController::class, 'searchEmails']);
         });
 
         Route::prefix("templates")->group(function () {
