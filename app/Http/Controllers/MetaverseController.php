@@ -304,8 +304,8 @@ class MetaverseController extends Controller
         //update or create the invite
         $collaborator = Collaborator::where('email', $request->email)->where('metaverse_id', $metaverse->id)->first();
 
-        $invitation = new Collaborator();
         if (!$collaborator) {
+            $invitation = new Collaborator();
             $invitation->metaverse_id = $metaverse->id;
             $invitation->email = $request->email;
             $invitation->role = $request->role;
@@ -320,14 +320,104 @@ class MetaverseController extends Controller
                 "message" => "Invite sent successfully",
             ], 200);
         } else {
-            $invitation->role = $request->role;
-            $invitation->token = time() . Str::random(40);
-            $invitation->token_expiry = Carbon::now()->addHours(24);
+            //if already accepted and the role is different, update the role
+            if ($collaborator->status === 'accepted' && $collaborator->role !== $request->role) {
+                $collaborator->role = $request->role;
+                $collaborator->save();
+
+                return response()->json([
+                    "message" => "Invite updated successfully",
+                ], 200);
+            }
+
+            //if already accepted and the role is the same, return 
+            if ($collaborator->status === 'accepted' && $collaborator->role === $request->role) {
+                return response()->json([
+                    "message" => "Invite already accepted",
+                ], 200);
+            }
+
+            //if already pending
+            if ($collaborator->status === 'pending') {
+                //if the role is different, update the role
+                if ($collaborator->role !== $request->role) {
+                    $collaborator->role = $request->role;
+                }
+
+                //if the token expired, update the token
+                if ($collaborator->token_expiry < Carbon::now()) {
+                    $collaborator->token = time() . Str::random(40);
+                    $collaborator->token_expiry = Carbon::now()->addHours(24);
+                }
+
+                $collaborator->save();
+                return response()->json([
+                    "message" => "Invite updated successfully",
+                ], 200);
+            }
+
+            //if already rejected, update the token
+            if ($collaborator->status === 'rejected') {
+                $collaborator->role = $request->role;
+                $collaborator->status = 'pending';
+                $collaborator->token = time() . Str::random(40);
+                $collaborator->token_expiry = Carbon::now()->addHours(24);
+                $collaborator->save();
+
+                return response()->json([
+                    "message" => "Invite sent again",
+                ], 200);
+            }
+        }
+    }
+
+
+    public function updateInvite(Request $request, string $id)
+    {
+        $validation = Validator::make($request->all(), [
+            "role" => "string|in:viewer,editor,admin"
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                "message" => $validation->errors()->first()
+            ], 400);
+        }
+
+        $collaborator = Collaborator::find($id);
+
+        if (!$collaborator) {
+            return response()->json([
+                "message" => "Invite not found"
+            ], 404);
+        }
+
+        if ($collaborator->status === 'pending' && $collaborator->token_expiry < Carbon::now()) {
+            return response()->json([
+                "message" => "Invite expired"
+            ], 400);
+        }
+
+        if ($collaborator->status === 'accepted' && $collaborator->role === $request->role) {
+            return response()->json([
+                "message" => "Already collaborator"
+            ], 400);
+        }
+        if ($collaborator->status === 'rejected') {
 
             return response()->json([
-                "message" => "Invite updated successfully",
-            ], 200);
+                "message" => "Invite already rejected",
+            ], 400);
         }
+
+
+        $collaborator->role = $request->role;
+        $collaborator->save();
+
+        return response()->json([
+            "message" => "Invite updated successfully",
+            'data' => CollaboratorResource::make($collaborator)
+        ], 200);
     }
 
     public function getCollaborators($id)
@@ -408,6 +498,63 @@ class MetaverseController extends Controller
         return response()->json([
             'message' => 'Emails retrieved successfully',
             'data' => $emails
+        ], 200);
+    }
+
+    public function resendInvite(string $id)
+    {
+        $invitation = Collaborator::find($id);
+
+        if (!$invitation) {
+            return response()->json([
+                "message" => "Invite not found"
+            ], 404);
+        }
+
+        if (
+            $invitation->status === 'accepted'
+        ) {
+            return response()->json([
+                "message" => "Invite already accepted"
+            ], 400);
+        }
+
+        if (($invitation->status === 'pending' && $invitation->token_expiry < Carbon::now())) {
+            return response()->json([
+                "message" => "Invite already sent",
+
+            ], 400);
+        }
+
+        $invitation->token = time() . Str::random(40);
+        $invitation->token_expiry = Carbon::now()->addHours(24);
+
+        if ($invitation->status === 'rejected') {
+            $invitation->status = 'pending';
+        }
+
+        $invitation->save();
+
+        return response()->json([
+            "message" => "Invite sent successfully",
+            'data' => CollaboratorResource::make($invitation)
+        ], 200);
+    }
+
+    public function deleteInvite(string $id)
+    {
+        $invitation = Collaborator::find($id);
+
+        if (!$invitation) {
+            return response()->json([
+                "message" => "Invite not found"
+            ], 404);
+        }
+
+        $invitation->delete();
+
+        return response()->json([
+            "message" => "Collaborator removed successfully"
         ], 200);
     }
 }
