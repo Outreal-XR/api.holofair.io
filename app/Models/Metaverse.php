@@ -38,4 +38,14 @@ class Metaverse extends Model
     {
         return $this->hasMany(Collaborator::class, 'metaverse_id');
     }
+
+    public function generalSettings()
+    {
+        return $this->hasOne(GeneralSettings::class, 'metaverse_id');
+    }
+
+    public function avatarSettings()
+    {
+        return $this->hasOne(AvatarSettings::class, 'metaverse_id');
+    }
 }
