@@ -6,6 +6,7 @@ use App\Http\Controllers\{
     Auth\EmailVerificationController,
     GeneralController,
     MetaverseController,
+    SettingsController,
     TemplateController
 };
 use Illuminate\Support\Facades\Route;
@@ -19,9 +20,6 @@ Route::prefix('v1')->group(function () {
             "message" => "Hello World"
         ]);
     });
-
-    Route::post("/test/upload", [GeneralController::class, 'test']);
-    Route::post("/test-binary/upload", [GeneralController::class, 'testBinary']);
 
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::middleware('auth:sanctum')->group(function () {
@@ -48,12 +46,20 @@ Route::prefix('v1')->group(function () {
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');
             Route::post('/{id}/update', [MetaverseController::class, 'updateMetaverse'])->where('id', '[0-9]+');
             Route::post('/{id}/users/invite', [MetaverseController::class, 'sendInvite'])->where('id', '[0-9]+');
-            Route::post('/invites/{id}/update', [MetaverseController::class, 'updateInvite'])->where('id', '[0-9]+');
-            Route::post('/invites/{id}/resend', [MetaverseController::class, 'resendInvite'])->where('id', '[0-9]+');
-            Route::delete('/invites/{id}', [MetaverseController::class, 'deleteInvite'])->where('id', '[0-9]+');
             Route::get('/{id}/collaborators', [MetaverseController::class, 'getCollaborators'])->where('id', '[0-9]+');
+
+            Route::prefix("invites")->group(function () {
+                Route::post('/{id}/update', [MetaverseController::class, 'updateInvite'])->where('id', '[0-9]+');
+                Route::post('/{id}/resend', [MetaverseController::class, 'resendInvite'])->where('id', '[0-9]+');
+                Route::delete('/{id}', [MetaverseController::class, 'deleteInvite'])->where('id', '[0-9]+');
+            });
+
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
             Route::get('/{id}/users/emails/', [MetaverseController::class, 'searchEmails']);
+            Route::get('/{id}/settings/general', [SettingsController::class, 'getGeneralSettings'])->where('id', '[0-9]+');
+            Route::get('/{id}/settings/avatar', [SettingsController::class, 'getAvatarSettings'])->where('id', '[0-9]+');
+            Route::put('/{id}/settings/general', [SettingsController::class, 'updateGeneralSettings'])->where('id', '[0-9]+');
+            Route::put('/{id}/settings/avatar', [SettingsController::class, 'updateAvatarSettings'])->where('id', '[0-9]+');
         });
 
         Route::prefix("templates")->group(function () {
