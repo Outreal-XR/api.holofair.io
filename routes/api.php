@@ -21,6 +21,19 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
+    // Route::get("/add-settings", function () {
+    //     $metaverses = \App\Models\Metaverse::all();
+
+    //     foreach ($metaverses as $metaverse) {
+    //         $generalSettings = new \App\Models\GeneralSettings();
+    //         $generalSettings->metaverse_id = $metaverse->id;
+    //         $generalSettings->save();
+    //     }
+    // });
+
+    Route::get("/add-settings", [SettingsController::class, "addSettings"]);
+    Route::get("/test-observer", [SettingsController::class, "testObserver"]);
+
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
     Route::middleware('auth:sanctum')->group(function () {
 
@@ -55,11 +68,11 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
-            Route::get('/{id}/users/emails/', [MetaverseController::class, 'searchEmails']);
-            Route::get('/{id}/settings/general', [SettingsController::class, 'getGeneralSettings'])->where('id', '[0-9]+');
-            Route::get('/{id}/settings/avatar', [SettingsController::class, 'getAvatarSettings'])->where('id', '[0-9]+');
-            Route::put('/{id}/settings/general', [SettingsController::class, 'updateGeneralSettings'])->where('id', '[0-9]+');
-            Route::put('/{id}/settings/avatar', [SettingsController::class, 'updateAvatarSettings'])->where('id', '[0-9]+');
+        });
+
+        Route::prefix('settings')->group(function () {
+            Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
+            Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updatedMetaverseSetting'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
         });
 
         Route::prefix("templates")->group(function () {

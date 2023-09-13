@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Metaverse;
+use App\Models\Setting;
 
 class MetaverseObserver
 {
@@ -11,11 +12,11 @@ class MetaverseObserver
      */
     public function created(Metaverse $metaverse): void
     {
-        //create general settings
-        $metaverse->generalSettings()->create();
+        $settings = Setting::all();
 
-        //create avatar settings
-        $metaverse->avatarSettings()->create();
+        foreach ($settings as $setting) {
+            $metaverse->settings()->attach($setting->id, ['value' => $setting->default_value]);
+        }
     }
 
     /**
