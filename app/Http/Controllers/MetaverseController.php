@@ -430,7 +430,7 @@ class MetaverseController extends Controller
             ], 404);
         }
 
-        $collaborators = $metaverse->collaborators;
+        $collaborators = $metaverse->collaborators()->orderBy('role', 'asc')->get();
         $owner = $metaverse->user;
 
         return response()->json([
