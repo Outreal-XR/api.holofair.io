@@ -11,11 +11,12 @@ class InvitedUser extends Model
 
     protected $fillable = [
         'email',
-        'is_accepted',
+        'status',
+        'role',
+        'token',
+        'token_expiry',
         'invited_by',
         'metaverse_id',
-        'can_edit',
-        'can_view',
     ];
 
     public function metaverse()
