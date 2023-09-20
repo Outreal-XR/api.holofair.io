@@ -389,7 +389,6 @@ class MetaverseController extends Controller
         }
     }
 
-
     public function updateInvite(Request $request, string $id)
     {
         $validation = Validator::make($request->all(), [
@@ -464,9 +463,14 @@ class MetaverseController extends Controller
 
     public function getSharedMetaverses(Request $request)
     {
+        //get shared metaverses with roles
         $metaverses = Metaverse::whereHas('invitedUsers', function ($query) {
             $query->where('email', Auth::user()->email)->where('status', 'accepted');
-        })->orderBy('created_at', 'desc');
+        })
+            ->with(['invitedUsers' => function ($query) {
+                $query->where('email', Auth::user()->email)->where('status', 'accepted');
+            }])
+            ->orderBy('created_at', 'desc');
 
         $total = $metaverses->count();
 
@@ -475,6 +479,7 @@ class MetaverseController extends Controller
         }
 
         $metaverses = $metaverses->get();
+
 
         return response()->json([
             "data" => [

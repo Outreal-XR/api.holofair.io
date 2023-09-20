@@ -191,7 +191,13 @@ class SettingsController extends Controller
             ], 404);
         }
 
-        if (!$metavers->userid === Auth::id()) {
+        $is_collaborator = $metavers->invitedUsers()
+            ->where('email', Auth::user()->email)
+            ->where('role', '!=', 'viewer')
+            ->where('status', 'accepted')
+            ->exists();
+
+        if ($metavers->userid !== Auth::id() && !$is_collaborator) {
             return response()->json([
                 'message' => 'You are not authorized to update this metaverse',
             ], 401);
