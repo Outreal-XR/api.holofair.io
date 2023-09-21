@@ -6,6 +6,7 @@ use App\Http\Resources\CollaboratorResource;
 use App\Http\Resources\InvitedUserResource;
 use App\Http\Resources\MetaverseResource;
 use App\Http\Resources\UserResource;
+use App\Models\Addressable;
 use App\Models\Collaborator;
 use App\Models\InvitedUser;
 use App\Models\ItemPerRoom;
@@ -26,6 +27,17 @@ use Illuminate\Support\Str;
 class MetaverseController extends Controller
 {
     use MediaTrait;
+
+    /**
+     * Create a new metaverse (wether from template or blank | blank metaverses are also from template (blank template)) 
+     * and assign addressables, items per room, variables per item to it
+     * @author Asmaa Hamid
+     * @param Request $request name, thumbnail, template_id
+     * @return \Illuminate\Http\JsonResponse  MetaverseResource metaverse data
+     * @throws \Exception
+     * 
+     * @todo delete the line that adds default addressables to the metaverse after adding the default addressables to the blank template
+     */
     public function createMetaverseFromTemplate(Request $request)
     {
         $validation = Validator::make($request->all(), [
@@ -87,6 +99,11 @@ class MetaverseController extends Controller
 
             //get addressables from template metaversid
             $templateAddressables = $template->metaverse->addressables;
+
+            //if no addressables found, add addressables of ids [1, 3] (TODO: Delete this after adding addressables to all metaverses)
+            if ($templateAddressables->count() == 0) {
+                $templateAddressables = Addressable::whereIn('id', [1, 3])->get();
+            }
 
             //attach addressables to new metaverse
             foreach ($templateAddressables as $templateAddressable) {
@@ -157,6 +174,14 @@ class MetaverseController extends Controller
         }
     }
 
+    /**
+     * Get metaverse addressables urls by metaverse id and platform id
+     * @author Asmaa Hamid
+     * @param int $metaverse_id
+     * @param int $platform_id
+     * @return \Illuminate\Http\JsonResponse => Array addressables urls
+     * @throws \Exception
+     */
     public function getMetaverseAddrassablesLinks($metaverse_id, $platform_id)
     {
         $metaverse = Metaverse::find($metaverse_id);
@@ -184,6 +209,13 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+
+    /**
+     * Get metaverses of the logged in user
+     * @param Request $request limit
+     * @return \Illuminate\Http\JsonResponse: Collection of MetaverseResource
+     * @throws \Exception
+     */
     public function getMetaversesByUser(Request $request)
     {
 
@@ -200,6 +232,12 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Get metaverse by id
+     * @param int $id metaverse id
+     * @return \Illuminate\Http\JsonResponse MetaverseResource
+     * @throws \Exception
+     */
     public function getMetaverseById($id)
     {
         $metaverse = Metaverse::find($id);
@@ -228,6 +266,13 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Update metaverse
+     * @param Request $request data to update
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse: MetaverseResource
+     * @throws \Exception
+     */
     public function updateMetaverse(Request $request, string $id)
     {
 
@@ -279,6 +324,18 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Send invite to user to collaborate on metaverse or view it
+     * . For registered users only
+     * . Generate token and send it to user email
+     * . User can accept or reject the invitation
+     * . Viewer have status accepted by default
+     * . Every invited user is stored in invited_users table
+     * @param Request $request email, role
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse message
+     * @throws \Exception
+     */
     public function sendInvite(Request $request, string $id)
     {
         $validation = Validator::make($request->all(), [
@@ -389,6 +446,12 @@ class MetaverseController extends Controller
         }
     }
 
+    /**
+     * Update the role of the invited user
+     * @param Request $request role
+     * @param string $id invited_user invite id
+     * @return \Illuminate\Http\JsonResponse message
+     */
     public function updateInvite(Request $request, string $id)
     {
         $validation = Validator::make($request->all(), [
@@ -440,6 +503,11 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Get the collaborators of the metaverse
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse UserResource owner, Collection of InvitedUserResource 
+     */
     public function getCollaborators($id)
     {
         $metaverse = Metaverse::find($id);
@@ -461,6 +529,11 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Get the shared metaverses with the user
+     * @param Request $request limit
+     * @return \Illuminate\Http\JsonResponse Collection of MetaverseResource, total shared metaverses
+     */
     public function getSharedMetaverses(Request $request)
     {
         //get shared metaverses with roles
@@ -490,6 +563,12 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Get the emails of the users that can be invited to the metaverse and that don't include the owner
+     * @param Request $request search
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse Array of emails
+     */
     public function searchEmails(Request $request, $id)
     {
         if (!$request->search) {
@@ -527,6 +606,11 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Resend the invite to the user
+     * @param string $id invited_user invite id
+     * @return \Illuminate\Http\JsonResponse message
+     */
     public function resendInvite(string $id)
     {
         $invitation = InvitedUser::find($id);
@@ -570,6 +654,11 @@ class MetaverseController extends Controller
         ], 200);
     }
 
+    /**
+     * Delete the invite
+     * @param string $id invited_user invite id
+     * @return \Illuminate\Http\JsonResponse message
+     */
     public function deleteInvite(string $id)
     {
         $invitation = InvitedUser::find($id);
@@ -585,5 +674,14 @@ class MetaverseController extends Controller
         return response()->json([
             "message" => "Collaborator removed successfully"
         ], 200);
+    }
+
+    /**
+     * Block the user from the metaverse
+     * @param string $id invited_user invite id
+     * @return \Illuminate\Http\JsonResponse message
+     */
+    public function blockUser(string $id)
+    {
     }
 }
