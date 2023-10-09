@@ -73,7 +73,7 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('settings')->group(function () {
             Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
-            Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updatedMetaverseSetting'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
+            Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updateMetaverseSetting'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
         });
 
         Route::prefix("templates")->group(function () {

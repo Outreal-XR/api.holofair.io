@@ -146,32 +146,17 @@ class SettingsController extends Controller
 
     public function getMetaverseSettings($metaverse_id)
     {
-        $metaverse = Metaverse::find($metaverse_id);
+        $metaverse = Metaverse::with('settings')->findOrFail($metaverse_id);
 
-        if (!$metaverse) {
-            return response()->json([
-                'message' => 'Metaverse not found',
-            ], 404);
-        }
-
-        $settings = $metaverse->settings()
-            // ->whereNull("parent_id")
-
-            // //load children and their pivot values
-            // ->with(["children.metaverses" => function ($query) use ($metaverse_id) {
-            //     $query->where("metaverse_id", $metaverse_id);
-            // }])
-
-            ->get()->groupBy("category");
 
         return response()->json([
             'message' => 'Settings retrieved successfully',
-            'data' => $settings
+            'data' => $metaverse->settings,
         ], 200);
     }
 
 
-    public function updatedMetaverseSetting(Request $request, $id, $metaverse_id)
+    public function updateMetaverseSetting(Request $request, $id, $metaverse_id)
     {
         $validator = Validator::make($request->all(), [
             'value' => 'required|string',
@@ -183,41 +168,25 @@ class SettingsController extends Controller
             ], 400);
         }
 
-        $metavers  = Metaverse::find($metaverse_id);
+        $metaverse  = Metaverse::with(['settings', 'invitedUsers'])->findOrFail($metaverse_id);
 
-        if (!$metavers) {
-            return response()->json([
-                'message' => 'Metaverse not found',
-            ], 404);
-        }
-
-        $is_collaborator = $metavers->invitedUsers()
-            ->where('email', Auth::user()->email)
-            ->where('role', '!=', 'viewer')
-            ->where('status', 'accepted')
-            ->exists();
-
-        if ($metavers->userid !== Auth::id() && !$is_collaborator) {
+        if (!$metaverse->canUpdateMetaverse()) {
             return response()->json([
                 'message' => 'You are not authorized to update this metaverse',
             ], 401);
         }
 
-        if (!$metavers->settings->contains($id)) {
+        if (!$metaverse->settings->contains($id)) {
             return response()->json([
                 'message' => 'Setting not found',
             ], 404);
         }
 
-        $metaverseSetting = $metavers->settings()->where("setting_id", $id)->first();
-
-
-        $metaverseSetting->pivot->value = $request->value;
-        $metaverseSetting->pivot->save();
+        $metaverseSetting = $metaverse->settings()->updateExistingPivot($id, ['value' => $request->value]);
 
         return response()->json([
             'message' => 'Setting updated successfully',
-            'data' => $metaverseSetting
+            'data' => $metaverseSetting,
         ], 200);
     }
 }

@@ -349,13 +349,7 @@ class MetaverseController extends Controller
             ], 400);
         }
 
-        $metaverse = Metaverse::find($id);
-
-        if (!$metaverse) {
-            return response()->json([
-                "message" => "Metaverse not found"
-            ], 404);
-        }
+        $metaverse = Metaverse::findOrfail($id);
 
         $user = User::where('email', $request->email)->first();
 
@@ -388,60 +382,62 @@ class MetaverseController extends Controller
             $invitation->save();
 
             //send email
-
             return response()->json([
                 "message" => "Invite sent successfully",
             ], 200);
         } else {
-            //if already accepted and the role is different, update the role
-            if ($invited_user->status === 'accepted' && $invited_user->role !== $request->role) {
-                $invited_user->role = $request->role;
-                $invited_user->token = time() . Str::random(40);
-                $invited_user->token_expiry = $invited_user->role === 'viewer' ? Carbon::now()->addHours(24) : null;
-                $invited_user->save();
 
-                return response()->json([
-                    "message" => "Invite updated successfully",
-                ], 200);
-            }
+            switch ($invited_user->status) {
+                case 'accepted': {
+                        //if already accepted and the role is different, update the role
+                        if ($invited_user->role !== $request->role) {
+                            $invited_user->role = $request->role;
+                            $invited_user->token = time() . Str::random(40);
+                            $invited_user->token_expiry = $invited_user->role === 'viewer' ? Carbon::now()->addHours(24) : null;
+                            $invited_user->save();
 
-            //if already accepted and the role is the same, return 
-            if ($invited_user->status === 'accepted' && $invited_user->role === $request->role) {
-                return response()->json([
-                    "message" => "Invite already accepted",
-                ], 200);
-            }
+                            return response()->json([
+                                "message" => "Invite updated successfully",
+                            ], 200);
+                        } else {
+                            //if already accepted and the role is the same, return 
+                            return response()->json([
+                                "message" => "Invite already accepted",
+                            ], 200);
+                        }
+                    }
+                    break;
+                case 'rejected': {
+                        //if already rejected, update the token
+                        $invited_user->role = $request->role;
+                        $invited_user->status = 'pending';
+                        $invited_user->token = time() . Str::random(40);
+                        $invited_user->token_expiry = Carbon::now()->addHours(24);
+                        $invited_user->save();
 
-            //if already pending
-            if ($invited_user->status === 'pending') {
-                //if the role is different, update the role
-                if ($invited_user->role !== $request->role) {
-                    $invited_user->role = $request->role;
-                }
+                        return response()->json([
+                            "message" => "Invite sent again",
+                        ], 200);
+                    }
+                    break;
+                case 'pending': {
+                        //if the role is different, update the role
+                        if ($invited_user->role !== $request->role) {
+                            $invited_user->role = $request->role;
+                        }
 
-                //if the token expired, update the token
-                if ($invited_user->token_expiry < Carbon::now()) {
-                    $invited_user->token = time() . Str::random(40);
-                    $invited_user->token_expiry = Carbon::now()->addHours(24);
-                }
+                        //if the token expired, update the token
+                        if ($invited_user->token_expiry < Carbon::now()) {
+                            $invited_user->token = time() . Str::random(40);
+                            $invited_user->token_expiry = Carbon::now()->addHours(24);
+                        }
 
-                $invited_user->save();
-                return response()->json([
-                    "message" => "Invite updated successfully",
-                ], 200);
-            }
-
-            //if already rejected, update the token
-            if ($invited_user->status === 'rejected') {
-                $invited_user->role = $request->role;
-                $invited_user->status = 'pending';
-                $invited_user->token = time() . Str::random(40);
-                $invited_user->token_expiry = Carbon::now()->addHours(24);
-                $invited_user->save();
-
-                return response()->json([
-                    "message" => "Invite sent again",
-                ], 200);
+                        $invited_user->save();
+                        return response()->json([
+                            "message" => "Invite updated successfully",
+                        ], 200);
+                    }
+                    break;
             }
         }
     }
@@ -464,32 +460,30 @@ class MetaverseController extends Controller
             ], 400);
         }
 
-        $invited_user = InvitedUser::find($id);
+        $invited_user = InvitedUser::with(['user', 'inviter'])->findOrfail($id);
 
-        if (!$invited_user) {
-            return response()->json([
-                "message" => "Invite not found"
-            ], 404);
+        switch ($invited_user->status) {
+            case 'accepted':
+                if ($invited_user->role === $request->role) {
+                    return response()->json([
+                        "message" => "Already Invited"
+                    ], 400);
+                }
+
+                break;
+            case 'rejected':
+                return response()->json([
+                    "message" => "Invite already rejected",
+                ], 400);
+                break;
+            case 'pending':
+                if ($invited_user->token_expiry < Carbon::now()) {
+                    return response()->json([
+                        "message" => "Invite expired",
+                    ], 400);
+                }
+                break;
         }
-
-        if ($invited_user->status === 'pending' && $invited_user->token_expiry < Carbon::now()) {
-            return response()->json([
-                "message" => "Invite expired"
-            ], 400);
-        }
-
-        if ($invited_user->status === 'accepted' && $invited_user->role === $request->role) {
-            return response()->json([
-                "message" => "Already Invited"
-            ], 400);
-        }
-        if ($invited_user->status === 'rejected') {
-
-            return response()->json([
-                "message" => "Invite already rejected",
-            ], 400);
-        }
-
 
         $invited_user->role = $request->role;
         $invited_user->status = $request->role === 'viewer' ? 'accepted' : 'pending';
@@ -499,7 +493,6 @@ class MetaverseController extends Controller
 
         return response()->json([
             "message" => "Invite updated successfully",
-            'data' => InvitedUserResource::make($invited_user)
         ], 200);
     }
 
@@ -578,14 +571,7 @@ class MetaverseController extends Controller
             ], 200);
         }
 
-        $metaverse = Metaverse::find($id);
-
-        if (!$metaverse) {
-            return response()->json([
-                'message' => 'Metaverse not found',
-                'data' => []
-            ], 404);
-        }
+        $metaverse = Metaverse::findorFail($id);
 
         //remove spaces
         $search = str_replace(' ', '', $request->search);
@@ -613,28 +599,24 @@ class MetaverseController extends Controller
      */
     public function resendInvite(string $id)
     {
-        $invitation = InvitedUser::find($id);
+        $invitation = InvitedUser::findOrfail($id);
 
-        if (!$invitation) {
-            return response()->json([
-                "message" => "Invite not found"
-            ], 404);
+        switch ($invitation->status) {
+            case 'accepted':
+                return response()->json([
+                    "message" => "Invite already accepted"
+                ], 400);
+                break;
+            case 'pending':
+                if ($invitation->token_expiry > Carbon::now()) {
+                    return response()->json([
+                        "message" => "Invite already sent",
+                    ], 400);
+                }
+                break;
         }
 
-        if (
-            $invitation->status === 'accepted'
-        ) {
-            return response()->json([
-                "message" => "Invite already accepted"
-            ], 400);
-        }
 
-        if (($invitation->status === 'pending' && $invitation->token_expiry < Carbon::now())) {
-            return response()->json([
-                "message" => "Invite already sent",
-
-            ], 400);
-        }
 
         if ($invitation->role !== 'viewer') {
 
@@ -650,7 +632,6 @@ class MetaverseController extends Controller
 
         return response()->json([
             "message" => "Invite sent successfully",
-            'data' => InvitedUserResource::make($invitation)
         ], 200);
     }
 
@@ -661,13 +642,7 @@ class MetaverseController extends Controller
      */
     public function deleteInvite(string $id)
     {
-        $invitation = InvitedUser::find($id);
-
-        if (!$invitation) {
-            return response()->json([
-                "message" => "Invite not found"
-            ], 404);
-        }
+        $invitation = InvitedUser::findOrfail($id);
 
         $invitation->delete();
 

@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Metaverse;
+use App\Models\Setting;
 use App\Observers\MetaverseObserver;
+use App\Observers\SettingObserver;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -28,6 +30,7 @@ class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Metaverse::observe(MetaverseObserver::class);
+        Setting::observe(SettingObserver::class);
     }
 
     /**
