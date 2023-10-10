@@ -231,22 +231,6 @@ class MetaverseUserController extends Controller
     }
 
     /**
-     * Delete the invite
-     * @param string $id invited_user invite id
-     * @return \Illuminate\Http\JsonResponse message
-     */
-    public function deleteInvite(string $id)
-    {
-        $invitation = InvitedUser::findOrfail($id);
-
-        $invitation->delete();
-
-        return response()->json([
-            "message" => "Collaborator removed successfully"
-        ], 200);
-    }
-
-    /**
      * Get the emails of the users that can be invited to the metaverse and that don't include the owner
      * @param Request $request search
      * @param string $id metaverse id
@@ -329,7 +313,7 @@ class MetaverseUserController extends Controller
             ], 403);
         }
 
-        $invite = InvitedUser::where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
+        $invite = InvitedUser::with('user')->where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
 
         if (!$invite) {
             return response()->json([
@@ -343,12 +327,13 @@ class MetaverseUserController extends Controller
             ], 400);
         }
 
-        $user = User::where('email', $invite->email)->first();
+        $user = $invite->user;
+
 
         //check if the user is already blocked in the metaverse
         if ($metaverse->blockedusers->contains($user->id)) {
             return response()->json([
-                "message" => "User already blocked"
+                "message" => $user->fullName() . " is already blocked"
             ], 400);
         }
 
@@ -357,7 +342,56 @@ class MetaverseUserController extends Controller
         $invite->update(['status' => 'blocked']);
 
         return response()->json([
-            "message" => "User blocked successfully"
+            "message" => $user->fullName() . " blocked successfully"
+        ], 200);
+    }
+
+    /**
+     * Unblock the user from the metaverse
+     * @param int $id invited_user invite id
+     * @param int $metaverse_id metaverse id
+     * @return \Illuminate\Http\JsonResponse message
+     */
+    public function unblockUser($metaverse_id, $invite_id)
+    {
+        $metaverse = Metaverse::findOrfail($metaverse_id);
+
+        //check if the user is the owner/editor of the metaverse
+        if (!$metaverse->canUpdateMetaverse()) {
+            return response()->json([
+                "message" => "You don't have permission to unblock users"
+            ], 403);
+        }
+
+        $invite = InvitedUser::with('user')->where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
+
+        if (!$invite) {
+            return response()->json([
+                "message" => "Invite not found"
+            ], 404);
+        }
+
+        if ($invite->status !== 'blocked') {
+            return response()->json([
+                "message" => "User is not blocked"
+            ], 400);
+        }
+
+        $user = $invite->user;
+
+        //check if the user is already blocked in the metaverse
+        if (!$metaverse->blockedusers->contains($user->id)) {
+            return response()->json([
+                "message" =>  $user->fullName() . " is not blocked"
+            ], 400);
+        }
+
+        $metaverse->blockedUsers()->detach($user->id);
+
+        $invite->update(['status' => 'accepted']);
+
+        return response()->json([
+            "message" =>  $user->fullName() . " unblocked successfully"
         ], 200);
     }
 
@@ -367,8 +401,10 @@ class MetaverseUserController extends Controller
      * @param int $metaverse_id metaverse id
      * @return \Illuminate\Http\JsonResponse message
      */
-    public function removeUser($metaverse_id, $invite_id)
+    public function removeUser(Request $request, $metaverse_id, $invite_id)
     {
+        $isInvite = boolval($request->isInvite);
+
         $metaverse = Metaverse::findOrfail($metaverse_id);
 
         //check if the user is the owner/editor of the metaverse
@@ -386,22 +422,40 @@ class MetaverseUserController extends Controller
             ], 404);
         }
 
-        if ($invite->status === 'accepted' || $invite->status === 'blocked') {
-            $invite->delete();
+        $user = $invite->user;
+        //is isInvite => remove the pending invites only
+        if ($isInvite) {
 
-            if ($invite->status === 'blocked') {
-                $user = User::where('email', $invite->email)->first();
-                $metaverse->blockedUsers()->detach($user->id);
+            if ($invite->status !== 'pending') {
+                return response()->json([
+                    "message" => "You can't remove " . $user->fullName() . " because he/she already " . $invite->status . " the invite"
+                ], 400);
             }
 
+            $invite->delete();
 
             return response()->json([
-                "message" => "User removed successfully"
+                "message" => $user->fullName() . " invite deleted successfully",
             ], 200);
-        }
+        } else {
+            //else remove the accepted/blocked users
 
-        return response()->json([
-            "message" => "The user must accept the invite first"
-        ], 200);
+            if ($invite->status === 'accepted' || $invite->status === 'blocked') {
+                $invite->delete();
+
+
+                if ($invite->status === 'blocked') {
+                    $metaverse->blockedUsers()->detach($user->id);
+                }
+
+                return response()->json([
+                    "message" =>  $user->fullName() . " removed successfully"
+                ], 200);
+            }
+
+            return response()->json([
+                "message" => "The user must accept the invite first!"
+            ], 400);
+        }
     }
 }

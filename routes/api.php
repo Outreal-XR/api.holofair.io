@@ -66,12 +66,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/users/invite', [MetaverseUserController::class, 'sendInvite'])->where('id', '[0-9]+');
             Route::get('/{id}/collaborators', [MetaverseUserController::class, 'getCollaborators'])->where('id', '[0-9]+');
             Route::post('/{id}/invites/{invite_id}/block', [MetaverseUserController::class, 'blockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
+            Route::post('/{id}/invites/{invite_id}/unblock', [MetaverseUserController::class, 'unblockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
             Route::delete('/{id}/invites/{invite_id}', [MetaverseUserController::class, 'removeUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
 
             Route::prefix("invites")->group(function () {
                 Route::post('/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+');
                 Route::post('/{id}/resend', [MetaverseUserController::class, 'resendInvite'])->where('id', '[0-9]+');
-                Route::delete('/{id}', [MetaverseUserController::class, 'deleteInvite'])->where('id', '[0-9]+');
             });
         });
 
