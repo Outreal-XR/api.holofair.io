@@ -6,6 +6,7 @@ use App\Http\Controllers\{
     Auth\EmailVerificationController,
     GeneralController,
     MetaverseController,
+    MetaverseUserController,
     SettingsController,
     TemplateController
 };
@@ -58,17 +59,20 @@ Route::prefix('v1')->group(function () {
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');
             Route::post('/{id}/update', [MetaverseController::class, 'updateMetaverse'])->where('id', '[0-9]+');
-            Route::get("/{id}/emails/search", [MetaverseController::class, "searchEmails"])->where('id', '[0-9]+');
-            Route::post('/{id}/users/invite', [MetaverseController::class, 'sendInvite'])->where('id', '[0-9]+');
-            Route::get('/{id}/collaborators', [MetaverseController::class, 'getCollaborators'])->where('id', '[0-9]+');
+            Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
+
+            //metaverse users
+            Route::get("/{id}/emails/search", [MetaverseUserController::class, "searchEmails"])->where('id', '[0-9]+');
+            Route::post('/{id}/users/invite', [MetaverseUserController::class, 'sendInvite'])->where('id', '[0-9]+');
+            Route::get('/{id}/collaborators', [MetaverseUserController::class, 'getCollaborators'])->where('id', '[0-9]+');
+            Route::post('/{id}/invites/{invite_id}/block', [MetaverseUserController::class, 'blockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
+            Route::delete('/{id}/invites/{invite_id}', [MetaverseUserController::class, 'removeUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
 
             Route::prefix("invites")->group(function () {
-                Route::post('/{id}/update', [MetaverseController::class, 'updateInvite'])->where('id', '[0-9]+');
-                Route::post('/{id}/resend', [MetaverseController::class, 'resendInvite'])->where('id', '[0-9]+');
-                Route::delete('/{id}', [MetaverseController::class, 'deleteInvite'])->where('id', '[0-9]+');
+                Route::post('/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+');
+                Route::post('/{id}/resend', [MetaverseUserController::class, 'resendInvite'])->where('id', '[0-9]+');
+                Route::delete('/{id}', [MetaverseUserController::class, 'deleteInvite'])->where('id', '[0-9]+');
             });
-
-            Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
         });
 
         Route::prefix('settings')->group(function () {

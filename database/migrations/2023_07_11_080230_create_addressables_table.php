@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('addressables', function (Blueprint $table) {
             $table->id();
-            $table->char('uuid', 37);
             $table->text('description')->nullable();
             $table->text('thumbnail')->nullable();
             $table->enum('type', ['scenes', 'avatars'])->nullable();

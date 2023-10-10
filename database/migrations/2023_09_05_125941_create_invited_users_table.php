@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('invited_users', function (Blueprint $table) {
             $table->id();
             $table->string('email');
-            $table->boolean('is_accepted')->default(false);
+            $table->enum('status', ['pending', 'accepted', 'rejected', 'blocked'])->default('pending');
+            $table->enum('role', ['owner', 'admin', 'editor', 'viewer'])->default('viewer');
+            $table->string('token')->nullable();
+            $table->timestamp('token_expiry')->nullable();
             $table->bigInteger('invited_by')->unsigned();
             $table->foreign('invited_by')->references('id')->on('users')->onDelete('cascade');
             $table->bigInteger('metaverse_id')->unsigned();
             $table->foreign('metaverse_id')->references('id')->on('metaverses')->onDelete('cascade');
-            $table->boolean('can_edit')->default(false);
-            $table->boolean('can_view')->default(false);
             $table->timestamps();
         });
     }

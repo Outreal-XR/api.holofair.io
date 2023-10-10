@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('display_name');
             $table->string('name');
             $table->text('default_value')->nullable();
+            $table->unsignedBigInteger('parent_id')->nullable()->after('default_value');
+            $table->foreign('parent_id')->references('id')->on('settings')->onDelete('cascade');
             $table->timestamps();
         });
     }

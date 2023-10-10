@@ -54,20 +54,50 @@ class Metaverse extends Model
 
     public function canUpdateMetaverse()
     {
+        return $this->isOwner() || $this->isCollaborator();
+    }
+
+    public function isOwner()
+    {
         $user = Auth::user();
         if (!$user) {
             return false;
         }
 
-        $is_owner = $this->userid === $user->id;
+        return $this->userid === $user->id;
+    }
 
-        if ($is_owner) {
-            return true;
+    public function isCollaborator()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
         }
 
         return $this->invitedUsers->where('email', $user->email)
             ->where('status', 'accepted')
             ->where('role', 'editor')
             ->isNotEmpty();
+    }
+
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id');
+    }
+
+    public function isBlocked()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $this->blockedUsers->where('id', $user->id)->isNotEmpty();
+    }
+
+    //get blocked users from invited users
+    public function blockedCollaborators()
+    {
+        return $this->invitedUsers->where('status', 'blocked');
     }
 }
