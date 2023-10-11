@@ -26,6 +26,7 @@ class MetaverseResource extends JsonResource
             "user" => $this->user,
             "invitedUsers" => $this->whenLoaded('invitedUsers'),
             'is_collaborator' => $this->is_collaborator,
+            'is_blocked' => $this->is_blocked,
         ];
     }
 }

@@ -20,8 +20,12 @@ class Metaverse extends Model
         'url',
     ];
 
-    protected $appends = ['is_collaborator'];
+    protected $appends = [
+        'is_collaborator',
+        'is_blocked',
+    ];
 
+    //relations
     public function addressables()
     {
         return $this->belongsToMany(Addressable::class, 'addressable_per_metaverse', 'metaverseid', 'addressableid');
@@ -47,14 +51,47 @@ class Metaverse extends Model
         return $this->belongsToMany(Setting::class, 'metaverse_settings', 'metaverse_id', 'setting_id')->withPivot('value');
     }
 
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id');
+    }
+
+    //scopes
+    public function viewers()
+    {
+        return $this->invitedUsers()->where('role', 'viewer')->whereIn('status', ['accepted', 'blocked']);
+    }
+
+    public function collaborators()
+    {
+        return $this->invitedUsers()->where('role', 'editor')->whereIn('status', ['accepted', 'blocked']);
+    }
+
+    //attributes
     public function getIsCollaboratorAttribute()
     {
-        return $this->canUpdateMetaverse();
+        return $this->isOwner() || $this->isCollaborator();
+    }
+
+    public function getIsBlockedAttribute()
+    {
+        return $this->isBlocked();
+    }
+
+    //methods|checkers
+    public function canAccessMetaverse()
+    {
+        return ($this->isOwner() || $this->isCollaborator() || $this->isViewer()) && !$this->isBlocked();
     }
 
     public function canUpdateMetaverse()
     {
         return $this->isOwner() || $this->isCollaborator();
+    }
+
+    public function canDeleteMetaverse()
+    {
+        return $this->isOwner();
     }
 
     public function isOwner()
@@ -74,15 +111,17 @@ class Metaverse extends Model
             return false;
         }
 
-        return $this->invitedUsers->where('email', $user->email)
-            ->where('status', 'accepted')
-            ->where('role', 'editor')
-            ->isNotEmpty();
+        return $this->collaborators->where('email', $user->email)->isNotEmpty();
     }
 
-    public function blockedUsers()
+    public function isViewer()
     {
-        return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id');
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $this->viewers->where('email', $user->email)->isNotEmpty();
     }
 
     public function isBlocked()
@@ -93,11 +132,5 @@ class Metaverse extends Model
         }
 
         return $this->blockedUsers->where('id', $user->id)->isNotEmpty();
-    }
-
-    //get blocked users from invited users
-    public function blockedCollaborators()
-    {
-        return $this->invitedUsers->where('status', 'blocked');
     }
 }

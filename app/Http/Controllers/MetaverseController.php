@@ -248,14 +248,7 @@ class MetaverseController extends Controller
             ], 404);
         }
 
-        //check permissions
-        $is_collaborator = $metaverse
-            ->invitedUsers()
-            ->where('email', Auth::user()->email)
-            ->where('status', 'accepted')
-            ->exists();
-
-        if ($metaverse->userid != Auth::id() && !$is_collaborator) {
+        if ($metaverse->userid != Auth::id() && !$metaverse->canAccessMetaverse()) {
             return response()->json([
                 "message" => "You are not allowed to access this metaverse"
             ], 403);
@@ -333,12 +326,8 @@ class MetaverseController extends Controller
     {
         //get shared metaverses with roles
         $metaverses = Metaverse::whereHas('invitedUsers', function ($query) {
-            $query->where('email', Auth::user()->email)->where('status', 'accepted');
-        })
-            ->with(['invitedUsers' => function ($query) {
-                $query->where('email', Auth::user()->email)->where('status', 'accepted');
-            }])
-            ->orderBy('created_at', 'desc');
+            $query->where('email', Auth::user()->email)->whereIn('status', ['accepted', 'blocked']);
+        })->orderBy('created_at', 'desc');
 
         $total = $metaverses->count();
 

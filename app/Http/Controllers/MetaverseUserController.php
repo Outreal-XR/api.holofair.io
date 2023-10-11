@@ -50,12 +50,10 @@ class MetaverseUserController extends Controller
             ], 404);
         }
 
-        if ($metaverse->userid !== Auth::id()) {
-            //send a link to the user to view the metaverse
-
+        if ($metaverse->userid !== Auth::id() && $request->role !== 'viewer') {
             return response()->json([
-                "message" => "Link has been sent",
-            ], 200);
+                "message" => "You are not allowed to invite users as " . $request->role . " to this metaverse"
+            ], 403);
         }
 
         //update or create the invite
@@ -246,15 +244,14 @@ class MetaverseUserController extends Controller
         }
 
         $metaverse = Metaverse::findorFail($id);
-        $blockedUsers = $metaverse->blockedUsers()->pluck('email');
+        $blockedUsers = $metaverse->blockedUsers()->pluck('blocked_user_id');
 
         //remove spaces
-        $search = str_replace(' ', '', $request->search);
+        $search = '%' . str_replace(' ', '%', $request->search) . '%';
         $emails = User::where('id', '!=', Auth::id())
-            ->where('id', '!=', $metaverse->user_id)
-            ->where('email', 'LIKE', '%' . $search . '%')->pluck('email');
-
-        $emails = $emails->diff($blockedUsers);
+            ->where('id', '!=', $metaverse->userid)
+            ->whereNotIn('id', $blockedUsers)
+            ->where('email', 'LIKE', $search)->pluck('email');
 
         if ($emails->isEmpty()) {
             return response()->json([
