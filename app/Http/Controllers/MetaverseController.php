@@ -346,4 +346,27 @@ class MetaverseController extends Controller
             ]
         ], 200);
     }
+
+    /**
+     * Delete metaverse by id (soft delete)
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Exception
+     */
+    public function deleteMetaverse(string $id)
+    {
+        $metaverse = Metaverse::findOrFail($id);
+
+        if (!$metaverse->canDeleteMetaverse()) {
+            return response()->json([
+                "message" => "You are not allowed to delete this metaverse"
+            ], 403);
+        }
+
+        $metaverse->delete();
+
+        return response()->json([
+            "message" => "Metaverse deleted successfully"
+        ], 200);
+    }
 }

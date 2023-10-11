@@ -60,6 +60,7 @@ Route::prefix('v1')->group(function () {
             Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');
             Route::post('/{id}/update', [MetaverseController::class, 'updateMetaverse'])->where('id', '[0-9]+');
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
+            Route::delete('/{id}', [MetaverseController::class, 'deleteMetaverse'])->where('id', '[0-9]+');
 
             //metaverse users
             Route::get("/{id}/emails/search", [MetaverseUserController::class, "searchEmails"])->where('id', '[0-9]+');
