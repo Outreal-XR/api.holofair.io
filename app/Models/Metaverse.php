@@ -24,6 +24,7 @@ class Metaverse extends Model
     protected $appends = [
         'is_collaborator',
         'is_blocked',
+        'is_owner'
     ];
 
     //relations
@@ -77,6 +78,11 @@ class Metaverse extends Model
     public function getIsBlockedAttribute()
     {
         return $this->isBlocked();
+    }
+
+    public function getIsOwnerAttribute()
+    {
+        return $this->isOwner();
     }
 
     //methods|checkers
