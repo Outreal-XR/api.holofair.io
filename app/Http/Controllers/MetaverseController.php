@@ -240,19 +240,7 @@ class MetaverseController extends Controller
      */
     public function getMetaverseById($id)
     {
-        $metaverse = Metaverse::find($id);
-
-        if (!$metaverse) {
-            return response()->json([
-                "message" => "Metaverse not found"
-            ], 404);
-        }
-
-        if ($metaverse->userid != Auth::id() && !$metaverse->canAccessMetaverse()) {
-            return response()->json([
-                "message" => "You are not allowed to access this metaverse"
-            ], 403);
-        }
+        $metaverse = Metaverse::findOrfail($id);
 
         return response()->json([
             "data" => MetaverseResource::make($metaverse)
@@ -279,14 +267,7 @@ class MetaverseController extends Controller
             ], 400);
         }
 
-        $metaverse = Metaverse::find($id);
-
-        if (!$metaverse) {
-            return response()->json([
-                "message" => "Metaverse not found"
-            ], 404);
-        }
-
+        $metaverse = Metaverse::findOrfail($id);
         if ($request->has('thumbnail') && !empty($request->thumbnail)) {
 
             $thumbnail = $this->uploadMedia($request->thumbnail, "images/metaverses/thumbnails/" . Auth::id());
@@ -356,12 +337,6 @@ class MetaverseController extends Controller
     public function deleteMetaverse(string $id)
     {
         $metaverse = Metaverse::findOrFail($id);
-
-        if (!$metaverse->canDeleteMetaverse()) {
-            return response()->json([
-                "message" => "You are not allowed to delete this metaverse"
-            ], 403);
-        }
 
         $metaverse->delete();
 

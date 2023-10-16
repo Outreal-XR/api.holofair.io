@@ -63,5 +63,8 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'metaverse.canEdit' => \App\Http\Middleware\MetaverseCollaborator::class,
+        'metaverse.canAccess' => \App\Http\Middleware\MetaverseViewer::class,
+        'metaverse.owner' => \App\Http\Middleware\MetaverseOwner::class,
     ];
 }

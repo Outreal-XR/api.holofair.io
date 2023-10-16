@@ -93,7 +93,7 @@ class Metaverse extends Model
 
     public function canUpdateMetaverse()
     {
-        return $this->isOwner() || $this->isCollaborator();
+        return $this->isOwner() || $this->isCollaborator() && !$this->isBlocked();
     }
 
     public function canDeleteMetaverse()

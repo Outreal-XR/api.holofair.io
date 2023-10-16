@@ -170,12 +170,6 @@ class SettingsController extends Controller
 
         $metaverse  = Metaverse::with(['settings', 'invitedUsers'])->findOrFail($metaverse_id);
 
-        if (!$metaverse->canUpdateMetaverse()) {
-            return response()->json([
-                'message' => 'You are not authorized to update this metaverse',
-            ], 401);
-        }
-
         if (!$metaverse->settings->contains($id)) {
             return response()->json([
                 'message' => 'Setting not found',

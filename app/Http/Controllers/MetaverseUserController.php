@@ -41,6 +41,13 @@ class MetaverseUserController extends Controller
         }
 
         $metaverse = Metaverse::findOrfail($id);
+        $role = $request->role;
+
+        //authorize
+        $is_authorized = $this->authorizeUser($role, $metaverse);
+        if ($is_authorized !== true) {
+            return $is_authorized;
+        }
 
         $user = User::where('email', $request->email)->first();
 
@@ -50,12 +57,6 @@ class MetaverseUserController extends Controller
             ], 404);
         }
 
-        if ($metaverse->userid !== Auth::id() && $request->role !== 'viewer') {
-            return response()->json([
-                "message" => "You are not allowed to invite users as " . $request->role . " to this metaverse"
-            ], 403);
-        }
-
         //update or create the invite
         $invited_user = InvitedUser::where('email', $request->email)->where('metaverse_id', $metaverse->id)->first();
 
@@ -63,11 +64,11 @@ class MetaverseUserController extends Controller
             $invitation = new InvitedUser();
             $invitation->metaverse_id = $metaverse->id;
             $invitation->email = $request->email;
-            $invitation->role = $request->role;
+            $invitation->role = $role;
             $invitation->invited_by = Auth::id();
             $invitation->token = time() . Str::random(40);
-            $invitation->token_expiry = $request->role === 'viewer' ? null : Carbon::now()->addHours(24);
-            $invitation->status = $request->role === 'viewer' ? 'accepted' : 'pending';
+            $invitation->token_expiry = $role === 'viewer' ? null : Carbon::now()->addHours(24);
+            $invitation->status = $role === 'viewer' ? 'accepted' : 'pending';
             $invitation->save();
 
             //send email
@@ -79,8 +80,8 @@ class MetaverseUserController extends Controller
             switch ($invited_user->status) {
                 case 'accepted': {
                         //if already accepted and the role is different, update the role
-                        if ($invited_user->role !== $request->role) {
-                            $invited_user->role = $request->role;
+                        if ($invited_user->role !== $role) {
+                            $invited_user->role = $role;
                             $invited_user->token = time() . Str::random(40);
                             $invited_user->token_expiry = $invited_user->role === 'viewer' ? Carbon::now()->addHours(24) : null;
                             $invited_user->save();
@@ -98,7 +99,7 @@ class MetaverseUserController extends Controller
                     break;
                 case 'rejected': {
                         //if already rejected, update the token
-                        $invited_user->role = $request->role;
+                        $invited_user->role = $role;
                         $invited_user->status = 'pending';
                         $invited_user->token = time() . Str::random(40);
                         $invited_user->token_expiry = Carbon::now()->addHours(24);
@@ -111,8 +112,8 @@ class MetaverseUserController extends Controller
                     break;
                 case 'pending': {
                         //if the role is different, update the role
-                        if ($invited_user->role !== $request->role) {
-                            $invited_user->role = $request->role;
+                        if ($invited_user->role !== $role) {
+                            $invited_user->role = $role;
                         }
 
                         //if the token expired, update the token
@@ -150,6 +151,14 @@ class MetaverseUserController extends Controller
         }
 
         $invited_user = InvitedUser::with(['user', 'inviter'])->findOrfail($id);
+
+        $metaverse = $invited_user->metaverse;
+
+        if (!$metaverse->canUpdateMetaverse()) {
+            return response()->json([
+                "message" => "You are not authorized to update this metaverse"
+            ], 403);
+        }
 
         switch ($invited_user->status) {
             case 'accepted':
@@ -303,13 +312,6 @@ class MetaverseUserController extends Controller
     {
         $metaverse = Metaverse::findOrfail($metaverse_id);
 
-        //check if the user is the owner/editor of the metaverse
-        if (!$metaverse->canUpdateMetaverse()) {
-            return response()->json([
-                "message" => "You don't have permission to block users"
-            ], 403);
-        }
-
         $invite = InvitedUser::with('user')->where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
 
         if (!$invite) {
@@ -352,13 +354,6 @@ class MetaverseUserController extends Controller
     public function unblockUser($metaverse_id, $invite_id)
     {
         $metaverse = Metaverse::findOrfail($metaverse_id);
-
-        //check if the user is the owner/editor of the metaverse
-        if (!$metaverse->canUpdateMetaverse()) {
-            return response()->json([
-                "message" => "You don't have permission to unblock users"
-            ], 403);
-        }
 
         $invite = InvitedUser::with('user')->where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
 
@@ -404,13 +399,6 @@ class MetaverseUserController extends Controller
 
         $metaverse = Metaverse::findOrfail($metaverse_id);
 
-        //check if the user is the owner/editor of the metaverse
-        if (!$metaverse->canUpdateMetaverse()) {
-            return response()->json([
-                "message" => "You don't have permission to remove users"
-            ], 403);
-        }
-
         $invite = InvitedUser::where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
 
         if (!$invite) {
@@ -454,5 +442,48 @@ class MetaverseUserController extends Controller
                 "message" => "The user must accept the invite first!"
             ], 400);
         }
+    }
+
+    /**
+     * Authorize the user to send/update the invite
+     * @param string $role user role
+     * @param Metaverse $metaverse metaverse
+     * @return \Illuminate\Http\JsonResponse message
+     */
+    private function authorizeUser($role, $metaverse)
+    {
+        switch ($role) {
+            case 'admin': {
+                    if (!$metaverse->isOwner()) {
+                        return response()->json([
+                            'message' => 'Only the owner of the metaverse can perform this action.'
+                        ], 403);
+                    }
+                }
+                break;
+            case 'editor': {
+                    if (!$metaverse->canUpdateMetaverse()) {
+                        return response()->json([
+                            'message' => 'You are not allowed to invite collaborators to this metaverse.'
+                        ], 403);
+                    }
+                }
+                break;
+            case 'viewer': {
+                    if (!$metaverse->canAccessMetaverse()) {
+                        return response()->json([
+                            'message' => 'You are not allowed to invite viewers to this metaverse.'
+                        ], 403);
+                    }
+                }
+                break;
+            default: {
+                    return response()->json([
+                        'message' => 'Invalid role.'
+                    ], 403);
+                }
+        }
+
+        return true;
     }
 }
