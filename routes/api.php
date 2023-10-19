@@ -36,6 +36,9 @@ Route::prefix('v1')->group(function () {
     Route::get("/test-observer", [SettingsController::class, "testObserver"]);
 
     Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
+    //public routes
+    Route::get('/metaverses/{id}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
     Route::middleware('auth:sanctum')->group(function () {
 
         // Route::middleware('verified')->group(function () {
