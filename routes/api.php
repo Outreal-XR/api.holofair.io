@@ -61,6 +61,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [MetaverseController::class, 'createMetaverseFromTemplate']);
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
+            Route::get('/check-uniqueness', [MetaverseController::class, 'checkUniqueness']);
 
             Route::middleware(['metaverse.canAccess'])->group(function () {
                 Route::get("/{id}", [MetaverseController::class, "getMetaverseById"])->where('id', '[0-9]+');

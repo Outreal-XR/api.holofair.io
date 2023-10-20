@@ -41,7 +41,7 @@ class MetaverseController extends Controller
     public function createMetaverseFromTemplate(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            "name" => "required|string",
+            "name" => "required|string|unique:metaverses,name",
             "thumbnail" => "nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048",
             // "uuid" => "required|string",
             // "slug" => "required|string",
@@ -342,6 +342,35 @@ class MetaverseController extends Controller
 
         return response()->json([
             "message" => "Metaverse deleted successfully"
+        ], 200);
+    }
+
+    /**
+     * Check if metaverse is unique (case insensitive)
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkUniqueness(Request $request)
+    {
+        $name = $request->name;
+
+        if (!$name) {
+            return response()->json([
+                "message" => "Name is required"
+            ], 400);
+        }
+
+        $metaverse = Metaverse::where('name', $name)->first();
+
+        if ($metaverse) {
+            return response()->json([
+                "isUnique" => false,
+                "message" => $metaverse->name . " is already taken"
+            ], 200);
+        }
+
+        return response()->json([
+            "isUnique" => true
         ], 200);
     }
 }
