@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\MetaverseResource;
+use App\Models\Metaverse;
 use App\Models\Template;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,25 +12,21 @@ class TemplateController extends Controller
 {
     public function index(Request $request)
     {
-        $templates = Template::whereHas("metaverse", function ($q) {
-            return $q->where("name", "!=", "Blank");
-        })
-            ->with('metaverse');
+        $metaverses = Metaverse::where('name', 'NOT LIKE', '%Blank%')->whereHas("template")->with("template")->orderBy("created_at", "DESC");
+        $total = $metaverses->count();
 
         if ($request->has("limit")) {
-            $templates = $templates->limit($request->limit);
+            $metaverses = $metaverses->limit($request->limit);
         }
 
-        $templates = $templates->get();
-
-        $templates->map(function ($template) {
-            $template->metaverse->thumbnail = $template->metaverse->thumbnail ? asset($template->metaverse->thumbnail) : null;
-            return $template;
-        });
+        $metaverses = $metaverses->get();
 
         return response()->json([
-            "message" => "success",
-            "data" => $templates
+
+            "data" => [
+                "metaverses" => MetaverseResource::collection($metaverses),
+                "total" => $total
+            ]
         ], Response::HTTP_OK);
     }
 }

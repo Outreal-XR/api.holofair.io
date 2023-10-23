@@ -41,11 +41,11 @@ class MetaverseController extends Controller
     public function createMetaverseFromTemplate(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            "name" => "required|string|unique:metaverses,name",
+            "name" => "required|string|unique:metaverses",
             "thumbnail" => "nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048",
             // "uuid" => "required|string",
             // "slug" => "required|string",
-            "template_id" => "nullable|integer",
+            "template_id" => "nullable|integer|exists:templates,id",
         ]);
 
         if ($validation->fails()) {
@@ -220,6 +220,7 @@ class MetaverseController extends Controller
     {
 
         $metaverses = Metaverse::where('userid', Auth::id())->orderBy('created_at', 'desc');
+        $total = $metaverses->count();
 
         if ($request->has("limit")) {
             $metaverses = $metaverses->limit($request->limit);
@@ -228,7 +229,11 @@ class MetaverseController extends Controller
         $metaverses = $metaverses->get();
 
         return response()->json([
-            "data" => MetaverseResource::collection($metaverses)
+            "data" =>
+            [
+                "total" => $total,
+                "metaverses" => MetaverseResource::collection($metaverses)
+            ]
         ], 200);
     }
 

@@ -15,6 +15,6 @@ class Template extends Model
 
     public function metaverse()
     {
-        return $this->belongsTo(Metaverse::class, 'metaverseid');
+        return $this->hasOne(Metaverse::class, 'id', 'metaverseid');
     }
 }

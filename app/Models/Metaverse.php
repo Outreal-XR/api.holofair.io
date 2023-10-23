@@ -33,9 +33,9 @@ class Metaverse extends Model
         return $this->belongsToMany(Addressable::class, 'addressable_per_metaverse', 'metaverseid', 'addressableid');
     }
 
-    public function templates()
+    public function template()
     {
-        return $this->hasMany(Template::class, 'metaverseid');
+        return $this->hasOne(Template::class, 'metaverseid');
     }
 
     public function user()
