@@ -11,6 +11,7 @@ use App\Models\Collaborator;
 use App\Models\InvitedUser;
 use App\Models\ItemPerRoom;
 use App\Models\Metaverse;
+use App\Models\MetaverseLink;
 use App\Models\Platform;
 use App\Models\Template;
 use App\Models\User;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 
 class MetaverseController extends Controller
 {
@@ -376,6 +378,56 @@ class MetaverseController extends Controller
 
         return response()->json([
             "isUnique" => true
+        ], 200);
+    }
+
+    /**
+     * 
+     * add link to metaverse
+     * @param Request $request
+     * @param string $id metaverse id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function addLink(Request $request, string $id)
+    {
+        $validation = Validator::make($request->all(), [
+            "url" => "required|url",
+            "name" => "required|string",
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                "message" => $validation->errors()->first()
+            ], 400);
+        }
+
+        $metaverse = Metaverse::findOrfail($id);
+        $link = MetaverseLink::where('metaverse_id', $metaverse->id)->where(function ($query) use ($request) {
+            $query->where('name', $request->name)->orWhere('url', $request->url);
+        })->first();
+
+        try {
+
+            if ($link) {
+                $link->url = $request->url;
+                $link->name = $request->name;
+                $link->save();
+            } else {
+                $link = new MetaverseLink();
+                $link->metaverse_id = $metaverse->id;
+                $link->name = $request->name;
+                $link->url = $request->url;
+                $link->save();
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => $e->getMessage()
+            ], 400);
+        }
+
+        return response()->json([
+            "message" => "Link added successfully",
+
         ], 200);
     }
 }

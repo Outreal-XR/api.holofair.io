@@ -29,6 +29,7 @@ class MetaverseResource extends JsonResource
             'is_blocked' => $this->is_blocked,
             'is_owner' => $this->is_owner,
             "template" => $this->whenLoaded('template'),
+            "links" => $this->links,
         ];
     }
 }

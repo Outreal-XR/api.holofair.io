@@ -24,7 +24,8 @@ class Metaverse extends Model
     protected $appends = [
         'is_collaborator',
         'is_blocked',
-        'is_owner'
+        'is_owner',
+        'links',
     ];
 
     //relations
@@ -58,6 +59,11 @@ class Metaverse extends Model
         return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id');
     }
 
+    public function links()
+    {
+        return $this->hasMany(MetaverseLink::class, 'metaverse_id');
+    }
+
     //scopes
     public function viewers()
     {
@@ -83,6 +89,11 @@ class Metaverse extends Model
     public function getIsOwnerAttribute()
     {
         return $this->isOwner();
+    }
+
+    public function getLinksAttribute()
+    {
+        return $this->links()->get();
     }
 
     //methods|checkers

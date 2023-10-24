@@ -72,6 +72,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/invites/{invite_id}/block', [MetaverseUserController::class, 'blockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
                 Route::post('/{id}/invites/{invite_id}/unblock', [MetaverseUserController::class, 'unblockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
                 Route::delete('/{id}/invites/{invite_id}', [MetaverseUserController::class, 'removeUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
+                Route::post('/{id}/links', [MetaverseController::class, 'addLink'])->where('id', '[0-9]+');
             });
 
             Route::middleware(['metaverse.owner'])->group(function () {
