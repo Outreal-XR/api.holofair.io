@@ -367,7 +367,8 @@ class MetaverseController extends Controller
             ], 400);
         }
 
-        $metaverse = Metaverse::where('name', $name)->first();
+        //search for metaverse with the same name (including soft deleted)
+        $metaverse = Metaverse::withTrashed()->whereRaw('LOWER(name) = ?', strtolower($name))->first();
 
         if ($metaverse) {
             return response()->json([
