@@ -7,9 +7,13 @@ use App\Http\Resources\UserResource;
 use App\Models\InvitedUser;
 use App\Models\Metaverse;
 use App\Models\User;
+use App\Notifications\InviteNotification;
+use Brevo\Client\Model\SendSmtpEmail;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -23,11 +27,11 @@ class MetaverseUserController extends Controller
      * . Viewer have status accepted by default
      * . Every invited user is stored in invited_users table
      * @param Request $request email, role
-     * @param string $id metaverse id
+     * @param string $metaverse_id
      * @return \Illuminate\Http\JsonResponse message
      * @throws \Exception
      */
-    public function sendInvite(Request $request, string $id)
+    public function sendInvite(Request $request, string $metaverse_id)
     {
         $validation = Validator::make($request->all(), [
             "email" => "required|email",
@@ -40,10 +44,10 @@ class MetaverseUserController extends Controller
             ], 400);
         }
 
-        $metaverse = Metaverse::findOrfail($id);
+        $metaverse = Metaverse::findOrfail($metaverse_id);
         $role = $request->role;
 
-        //authorize
+        //authorize user and check if he is allowed to invite
         $is_authorized = $this->authorizeUser($role, $metaverse);
         if ($is_authorized !== true) {
             return $is_authorized;
@@ -60,75 +64,56 @@ class MetaverseUserController extends Controller
         //update or create the invite
         $invited_user = InvitedUser::where('email', $request->email)->where('metaverse_id', $metaverse->id)->first();
 
-        if (!$invited_user) {
-            $invitation = new InvitedUser();
-            $invitation->metaverse_id = $metaverse->id;
-            $invitation->email = $request->email;
-            $invitation->role = $role;
-            $invitation->invited_by = Auth::id();
-            $invitation->token = time() . Str::random(40);
-            $invitation->token_expiry = $role === 'viewer' ? null : Carbon::now()->addHours(24);
-            $invitation->status = $role === 'viewer' ? 'accepted' : 'pending';
-            $invitation->save();
-
-            //send email
+        if ($invited_user) {
             return response()->json([
-                "message" => "Invite sent successfully",
-            ], 200);
-        } else {
+                "message" => "Invite already sent"
+            ], 400);
+        }
 
-            switch ($invited_user->status) {
-                case 'accepted': {
-                        //if already accepted and the role is different, update the role
-                        if ($invited_user->role !== $role) {
-                            $invited_user->role = $role;
-                            $invited_user->token = time() . Str::random(40);
-                            $invited_user->token_expiry = $invited_user->role === 'viewer' ? Carbon::now()->addHours(24) : null;
-                            $invited_user->save();
+        $email_config = new SendSmtpEmail();
+        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setTo(array(array('email' => $request->email, 'name' => $user->fullName())));
+        $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
 
-                            return response()->json([
-                                "message" => "Invite updated successfully",
-                            ], 200);
-                        } else {
-                            //if already accepted and the role is the same, return 
-                            return response()->json([
-                                "message" => "Invite already accepted",
-                            ], 200);
-                        }
-                    }
-                    break;
-                case 'rejected': {
-                        //if already rejected, update the token
-                        $invited_user->role = $role;
-                        $invited_user->status = 'pending';
-                        $invited_user->token = time() . Str::random(40);
-                        $invited_user->token_expiry = Carbon::now()->addHours(24);
-                        $invited_user->save();
 
-                        return response()->json([
-                            "message" => "Invite sent again",
-                        ], 200);
-                    }
-                    break;
-                case 'pending': {
-                        //if the role is different, update the role
-                        if ($invited_user->role !== $role) {
-                            $invited_user->role = $role;
-                        }
+        DB::beginTransaction();
+        try {
+            $invited_user = new InvitedUser();
+            $invited_user->metaverse_id = $metaverse->id;
+            $invited_user->email = $request->email;
+            $invited_user->role = $role;
+            $invited_user->invited_by = Auth::id();
+            $invited_user->token = time() . Str::random(32);
+            $invited_user->token_expiry = $role === 'viewer' ? null : Carbon::now()->addDays(7);
+            $invited_user->status = $role === 'viewer' ? 'accepted' : 'pending';
+            $invited_user->save();
 
-                        //if the token expired, update the token
-                        if ($invited_user->token_expiry < Carbon::now()) {
-                            $invited_user->token = time() . Str::random(40);
-                            $invited_user->token_expiry = Carbon::now()->addHours(24);
-                        }
-
-                        $invited_user->save();
-                        return response()->json([
-                            "message" => "Invite updated successfully",
-                        ], 200);
-                    }
-                    break;
+            $invited_userLink = env('FRONT_URL');
+            if ($role === 'viewer') {
+                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+            } else {
+                $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
             }
+
+            $email_config->setHtmlContent(view('emails.collaborator-invite', [
+                'metaverseName' => $metaverse->name,
+                'inviterName' => Auth::user()->fullName(),
+                'role' => $role,
+                "url" => $invited_userLink,
+            ])->render());
+
+
+            $this->brevoApiInstance->sendTransacEmail($email_config);
+            DB::commit();
+
+            return response()->json([
+                "message" => "Invite sent successfully"
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "message" => "Something went wrong"
+            ], 500);
         }
     }
 
@@ -141,7 +126,7 @@ class MetaverseUserController extends Controller
     public function updateInvite(Request $request, string $id)
     {
         $validation = Validator::make($request->all(), [
-            "role" => "string|in:viewer,editor,admin"
+            "role" => "required|string|in:viewer,editor,admin"
         ]);
 
         if ($validation->fails()) {
@@ -152,13 +137,21 @@ class MetaverseUserController extends Controller
 
         $invited_user = InvitedUser::with(['user', 'inviter'])->findOrfail($id);
 
-        $metaverse = $invited_user->metaverse;
-
-        if (!$metaverse->canUpdateMetaverse()) {
+        if ($invited_user->role === $request->role) {
             return response()->json([
-                "message" => "You are not authorized to update this metaverse"
-            ], 403);
+                "message" => "Already Invited"
+            ], 400);
         }
+
+        $user = $invited_user->user;
+
+        if (!$user) {
+            return response()->json([
+                "message" => "User not found"
+            ], 404);
+        }
+
+        $metaverse = $invited_user->metaverse;
 
         switch ($invited_user->status) {
             case 'accepted':
@@ -169,11 +162,6 @@ class MetaverseUserController extends Controller
                 }
 
                 break;
-            case 'rejected':
-                return response()->json([
-                    "message" => "Invite already rejected",
-                ], 400);
-                break;
             case 'pending':
                 if ($invited_user->token_expiry < Carbon::now()) {
                     return response()->json([
@@ -183,15 +171,47 @@ class MetaverseUserController extends Controller
                 break;
         }
 
-        $invited_user->role = $request->role;
-        $invited_user->status = $request->role === 'viewer' ? 'accepted' : 'pending';
-        $invited_user->token = time() . Str::random(40);
-        $invited_user->token_expiry = $request->role === 'viewer' ? null : Carbon::now()->addHours(24);
-        $invited_user->save();
+        $email_config = new SendSmtpEmail();
+        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
+        $email_config->setSubject('Role updated in ' . $metaverse->name);
 
-        return response()->json([
-            "message" => "Invite updated successfully",
-        ], 200);
+        DB::beginTransaction();
+
+        try {
+
+            $invited_user->role = $request->role;
+            $invited_user->status = $request->role === 'viewer' ? 'accepted' : 'pending';
+            $invited_user->token_expiry = $request->role === 'viewer' ? null : Carbon::now()->addDays(7);
+            $invited_user->save();
+
+            $invited_userLink = env('FRONT_URL');
+            if ($request->role === 'viewer') {
+                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+            } else {
+                $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
+            }
+
+            $email_config->setHtmlContent(view('emails.invite-update', [
+                'metaverseName' => $metaverse->name,
+                'inviterName' => Auth::user()->fullName(),
+                'role' => $request->role,
+                "url" => $invited_userLink,
+            ])->render());
+
+            $this->brevoApiInstance->sendTransacEmail($email_config);
+
+            DB::commit();
+
+            return response()->json([
+                "message" => "Invite updated successfully",
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "message" => "Something went wrong. Error:" . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -201,40 +221,72 @@ class MetaverseUserController extends Controller
      */
     public function resendInvite(string $id)
     {
-        $invitation = InvitedUser::findOrfail($id);
+        $invited_user = InvitedUser::findOrfail($id);
 
-        switch ($invitation->status) {
+        switch ($invited_user->status) {
             case 'accepted':
                 return response()->json([
                     "message" => "Invite already accepted"
                 ], 400);
                 break;
             case 'pending':
-                if ($invitation->token_expiry > Carbon::now()) {
+                if ($invited_user->token_expiry > Carbon::now()) {
                     return response()->json([
-                        "message" => "Invite already sent",
+                        "message" => "Invite already sent, and not expired yet",
                     ], 400);
                 }
                 break;
         }
 
+        $user = $invited_user->user;
+        $metaverse = $invited_user->metaverse;
 
+        $email_config = new SendSmtpEmail();
+        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
+        $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
 
-        if ($invitation->role !== 'viewer') {
+        DB::beginTransaction();
 
-            $invitation->token = time() . Str::random(40);
-            $invitation->token_expiry = Carbon::now()->addHours(24);
+        try {
 
-            if ($invitation->status === 'rejected') {
-                $invitation->status = 'pending';
+            if ($invited_user->role !== 'viewer') {
+                $invited_user->token_expiry = Carbon::now()->addDays(7);
+
+                if ($invited_user->status === 'rejected') {
+                    $invited_user->status = 'pending';
+                }
+
+                $invited_user->save();
             }
 
-            $invitation->save();
-        }
+            $invited_userLink = env('FRONT_URL');
+            if ($invited_user->role === 'viewer') {
+                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+            } else {
+                $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
+            }
 
-        return response()->json([
-            "message" => "Invite sent successfully",
-        ], 200);
+            $email_config->setHtmlContent(view('emails.collaborator-invite', [
+                'metaverseName' => $metaverse->name,
+                'inviterName' => Auth::user()->fullName(),
+                'role' => $invited_user->role,
+                "url" => $invited_userLink,
+            ])->render());
+
+            $this->brevoApiInstance->sendTransacEmail($email_config);
+
+            DB::commit();
+
+            return response()->json([
+                "message" => "Invite sent successfully",
+            ], 200);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "message" => "Something went wrong. Error:" . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -388,7 +440,7 @@ class MetaverseUserController extends Controller
     }
 
     /**
-     * Remove the user from metaverse invited users (accepted)
+     * Remove the user from metaverse invited users (either pending or accepted)
      * @param int $id invited_user invite id
      * @param int $metaverse_id metaverse id
      * @return \Illuminate\Http\JsonResponse message
@@ -487,5 +539,151 @@ class MetaverseUserController extends Controller
         return true;
     }
 
-    
+    public function getPendingInvitations()
+    {
+        $user = Auth::user();
+
+        $invites = $user->invites()->where('status', 'pending')
+            ->where('token_expiry', '>', Carbon::now())
+            ->with('metaverse')
+            ->get();
+
+        $invitesCount = $invites->count();
+
+        $invites = InvitedUserResource::collection($invites);
+
+        return response()->json([
+            'data' => [
+                'invites' => $invites,
+                'invitesCount' => $invitesCount
+            ]
+        ], 200);
+    }
+
+    public function checkInvite($metaverse_id, $invite_id)
+    {
+        $validity = $this->checkInviteValidity($invite_id, $metaverse_id);
+        $metaverse = Metaverse::findOrFail($metaverse_id);
+
+        return response()->json([
+            'message' => $validity['message'],
+            'data' => [
+                'metaverse' => [
+                    'name' => $metaverse->name,
+                    'thumbnail' => $metaverse->thumbnail ? asset($metaverse->thumbnail) : null,
+                    'user' => [
+                        'first_name' => $metaverse->user->first_name,
+                        'last_name' => $metaverse->user->last_name,
+                    ],
+                ],
+            ]
+        ], $validity['statusCode']);
+    }
+
+    public function acceptInvite($metaverse_id, $invite_id)
+    {
+        $validity = $this->checkInviteValidity($invite_id, $metaverse_id);
+
+        if (!$validity['valid']) {
+            return response()->json([
+                'message' => $validity['message'],
+            ], $validity['statusCode']);
+        }
+
+
+        $invite = InvitedUser::find($invite_id);
+        $invite->update(['status' => 'accepted']);
+
+        return response()->json([
+            'message' => 'Invitation accepted successfully',
+        ], 200);
+    }
+
+    public function rejectInvite($metaverse_id, $invite_id)
+    {
+        $validity = $this->checkInviteValidity($invite_id, $metaverse_id);
+
+        if (!$validity['valid']) {
+            return response()->json([
+                'message' => $validity['message']
+            ], $validity['statusCode']);
+        }
+
+        $invite = InvitedUser::find($invite_id);
+        $invite->delete();
+
+        return response()->json([
+            'message' => 'Invitation rejected successfully'
+        ], 200);
+    }
+
+    private function checkInviteValidity($invite_id, $metaverse_id)
+    {
+        $validity = [
+            'valid' => true,
+            'message' => 'Invitation is valid',
+            'statusCode' => 200,
+        ];
+
+        //check if the invitation is valid
+        $invitation = InvitedUser::where('id', $invite_id)->where('metaverse_id', $metaverse_id)->first();
+
+        if (!$invitation) {
+            $validity['valid'] = false;
+            $validity['message'] = 'Invitation not found';
+            $validity['statusCode'] = 404;
+            return $validity;
+        }
+
+        //check if the invitation belongs to the user
+        if ($invitation->email !== Auth::user()->email) {
+            $validity['valid'] = false;
+            $validity['message'] = 'Invitation not found';
+            $validity['statusCode'] = 403;
+            return $validity;
+        }
+
+        switch ($invitation->status) {
+            case 'accepted': {
+                    $validity['valid'] = true;
+                    $validity['message'] = 'Invitation already accepted';
+                    $validity['statusCode'] = 200;
+                    return $validity;
+                }
+                break;
+            case 'blocked': {
+                    $validity['valid'] = false;
+                    $validity['message'] = 'You are blocked from this metaverse';
+                    $validity['statusCode'] = 200;
+                    return $validity;
+                }
+                break;
+            case 'declined': {
+                    $validity['valid'] = false;
+                    $validity['message'] = 'Invitation already rejected';
+                    $validity['statusCode'] = 400;
+                    return $validity;
+                }
+                break;
+            case 'pending': {
+                    if ($invitation->token_expiry < Carbon::now()) {
+                        $validity['valid'] = false;
+                        $validity['message'] = 'Invitation expired';
+                        $validity['statusCode'] = 400;
+                        return $validity;
+                    }
+                }
+                break;
+            default: {
+                    $validity['valid'] = false;
+                    $validity['message'] = 'Invitation not found';
+                    $validity['statusCode'] = 404;
+                    return $validity;
+                }
+        }
+
+        $validatity['invitation'] = $invitation;
+
+        return $validity;
+    }
 }

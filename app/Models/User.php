@@ -4,13 +4,21 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use Brevo\Client\Api\TransactionalEmailsApi;
+use Brevo\Client\Configuration;
+use Brevo\Client\Model\SendSmtpEmail;
+use Carbon\Carbon;
+use Exception;
+use GuzzleHttp\Client;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Config;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -30,6 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'avatar',
         'phone_number',
         'uuid',
+        'email_verified_at'
     ];
 
     /**
@@ -66,8 +75,47 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(InvitedUser::class, 'email', 'email');
     }
 
-    public function fullName()
+    /**
+     * Get the full name of the user.
+     * @return string
+     */
+    public function fullName(): string
     {
         return $this->first_name . ' ' . $this->last_name;
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $url = $this->verificationUrl();
+
+        $sendSmtpEmail = new SendSmtpEmail();
+        $sendSmtpEmail->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $sendSmtpEmail->setTo(array(array('name' => $this->fullName(), 'email' => $this->email)));
+        $sendSmtpEmail->setTemplateId(7);
+        $sendSmtpEmail->setParams(array(
+            'firstname' => $this->first_name,
+            'verificationlink' => $url
+        ));
+
+        $config = Configuration::getDefaultConfiguration()->setApiKey('api-key', env('BREVO_API_KEY'));
+        $brevoApiInstance = new TransactionalEmailsApi(new Client(), $config);
+
+        try {
+            return $brevoApiInstance->sendTransacEmail($sendSmtpEmail);
+        } catch (Exception $e) {
+            echo 'Exception when calling TransactionalEmailsApi->sendTransacEmail: ', $e->getMessage(), PHP_EOL;
+        }
+    }
+
+    private function verificationUrl()
+    {
+        return URL::temporarySignedRoute(
+            'verification.verify',
+            Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
+            [
+                'id' => $this->getKey(),
+                'hash' => sha1($this->getEmailForVerification()),
+            ]
+        );
     }
 }

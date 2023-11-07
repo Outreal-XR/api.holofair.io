@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('addressableid')->nullable();
             $table->unsignedBigInteger('metaverseid')->nullable();
             $table->timestamps();
-            $table->foreign('addressableid')->references('id')->on('addressables');
-            $table->foreign('metaverseid')->references('id')->on('metaverses');
+            $table->foreign('addressableid')->references('id')->on('addressables')->onDelete('cascade');
+            $table->foreign('metaverseid')->references('id')->on('metaverses')->onDelete('cascade');
         });
     }
 

@@ -15,9 +15,9 @@ return new class extends Migration
         Schema::create('metaverse_settings', function (Blueprint $table) {
             $table->id();
             $table->bigInteger("metaverse_id")->unsigned();
-            $table->foreign("metaverse_id")->references("id")->on("metaverses");
+            $table->foreign("metaverse_id")->references("id")->on("metaverses")->onDelete("cascade");
             $table->bigInteger("setting_id")->unsigned();
-            $table->foreign("setting_id")->references("id")->on("settings");
+            $table->foreign("setting_id")->references("id")->on("settings")->onDelete("cascade");
             $table->text("value")->nullable();
             $table->timestamps();
         });
