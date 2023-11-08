@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\{
     Auth\AuthController,
-    TempController,
-    Auth\EmailVerificationController,
+    Auth\VerifyEmailController,
+    Auth\EmailVerificationNotificationController,
     GeneralController,
     MetaverseController,
     MetaverseUserController,
@@ -22,39 +22,30 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    // Route::get("/add-settings", function () {
-    //     $metaverses = \App\Models\Metaverse::all();
-
-    //     foreach ($metaverses as $metaverse) {
-    //         $generalSettings = new \App\Models\GeneralSettings();
-    //         $generalSettings->metaverse_id = $metaverse->id;
-    //         $generalSettings->save();
-    //     }
-    // });
-
     Route::get("/add-settings", [SettingsController::class, "addSettings"]);
     Route::get("/test-observer", [SettingsController::class, "testObserver"]);
 
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
 
     //public routes
-    Route::get('/metaverses/{id}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/metaverses/{ismtpd}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
 
-        // Route::middleware('verified')->group(function () {
+    Route::get("/testEmail", [GeneralController::class, "getEmailTemplate"]);
+    Route::post("/smtp/email", [GeneralController::class, "testEmail"]);
+
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware(['throttle:1,2', 'auth:sanctum'])
+        ->name('verification.send');
+
+    Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+
         Route::get('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
         Route::post('/user/update', [AuthController::class, 'update']);
 
         Route::prefix('users')->group(function () {
-        });
-
-        Route::prefix('temps')->group(function () {
-            Route::post('/', [TempController::class, 'store']);
-            Route::get('/{id}', [TempController::class, 'show']);
-            Route::post('/{id}/update', [TempController::class, 'update']);
-            Route::get('/', [TempController::class, 'index']);
-            Route::delete('/{id}', [TempController::class, 'destroy']);
         });
 
         Route::prefix('metaverses')->group(function () {
@@ -82,9 +73,14 @@ Route::prefix('v1')->group(function () {
             Route::get("/{id}/emails/search", [MetaverseUserController::class, "searchEmails"])->where('id', '[0-9]+');
             Route::post('/{id}/users/invite', [MetaverseUserController::class, 'sendInvite'])->where('id', '[0-9]+');
             Route::get('/{id}/collaborators', [MetaverseUserController::class, 'getCollaborators'])->where('id', '[0-9]+');
-            Route::post('/invites/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+');
+            Route::post('/invites/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+')->middleware(['metaverse.canEdit']);
             Route::post('/invites/{id}/resend', [MetaverseUserController::class, 'resendInvite'])->where('id', '[0-9]+');
+            Route::get('/{id}/invites/{invite_id}/check', [MetaverseUserController::class, 'checkInvite']);
+            Route::put('/{id}/invites/{invite_id}/accept', [MetaverseUserController::class, 'acceptInvite']);
+            Route::put('/{id}/invites/{invite_id}/reject', [MetaverseUserController::class, 'rejectInvite']);
         });
+
+        Route::get('/invites/pending', [MetaverseUserController::class, 'getPendingInvitations']);
 
         Route::prefix('settings')->group(function () {
             Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
@@ -94,8 +90,6 @@ Route::prefix('v1')->group(function () {
         Route::prefix("templates")->group(function () {
             Route::get("/", [TemplateController::class, "index"]);
         });
-
-        // });
     });
     Route::prefix("props")->group(function () {
         Route::post("/upload", [GeneralController::class, "uploadPropImages"]);

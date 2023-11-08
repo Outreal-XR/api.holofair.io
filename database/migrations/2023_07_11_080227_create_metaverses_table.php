@@ -16,13 +16,14 @@ return new class extends Migration
             $table->unsignedBigInteger('userid');
             $table->char('uuid', 37)->unique();
             $table->string('slug', 191);
-            $table->string('name', 191);
+            $table->string('name', 191)->unique();
             $table->text('description')->nullable();
             $table->text('thumbnail')->nullable();
             $table->text('url')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
-            $table->foreign('userid')->references('id')->on('users');
+            $table->foreign('userid')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

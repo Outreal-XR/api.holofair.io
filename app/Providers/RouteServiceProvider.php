@@ -17,7 +17,14 @@ class RouteServiceProvider extends ServiceProvider
      *
      * @var string
      */
-    public const HOME = '/home';
+    public const HOME = '/dashboard';
+    public const CONFIRM_VERIFICATION = '/confirm-verification';
+
+    //frontend routes
+    public const LOGIN_FRONT = '/login';
+    public const REGISTER_FRONT = '/register';
+    public const HOME_FRONT = '/home';
+    public const EMAIL_VERIFICATION_FRONT = '/email/verify';
 
     /**
      * Define your route model bindings, pattern filters, and other route configuration.

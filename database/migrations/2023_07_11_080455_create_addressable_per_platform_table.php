@@ -18,8 +18,8 @@ return new class extends Migration
             $table->text('url')->nullable();
             $table->timestamps();
 
-            $table->foreign('addressableid')->references('id')->on('addressables');
-            $table->foreign('platformid')->references('id')->on('platforms');
+            $table->foreign('addressableid')->references('id')->on('addressables')->onDelete('cascade');
+            $table->foreign('platformid')->references('id')->on('platforms')->onDelete('cascade');
         });
     }
 

@@ -18,7 +18,7 @@ class InvitedUserResource extends JsonResource
             'id' => $this->id,
             'user' => new UserResource($this->user),
             'inviter' => new UserResource($this->inviter),
-            "metaverse" => $this->whenLoaded('metaverse'),
+            "metaverse" => MetaverseResource::make($this->whenLoaded('metaverse')),
             'status' => $this->status,
             'role' => $this->role,
             'token' => $this->token,

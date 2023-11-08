@@ -41,6 +41,8 @@ class AuthController extends Controller
 
         event(new Registered($user));
 
+        Auth::login($user);
+
         return response()->json([
             'message' => 'User created successfully',
             'data' => [
@@ -49,7 +51,8 @@ class AuthController extends Controller
                     'first_name' => $user->first_name,
                     'last_name' => $user->last_name,
                     "uuid" => $user->uuid,
-                    "registered_at" => $user->created_at
+                    "registered_at" => $user->created_at,
+                    'isVerified' => $user->hasVerifiedEmail(),
                 ],
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -80,7 +83,8 @@ class AuthController extends Controller
                         'first_name' => $user->first_name,
                         'last_name' => $user->last_name,
                         "uuid" => $user->uuid,
-                        "registered_at" => $user->created_at
+                        "registered_at" => $user->created_at,
+                        'isVerified' => $user->hasVerifiedEmail(),
                     ],
                     'roles' => $user->getRoleNames(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
