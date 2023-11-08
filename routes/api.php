@@ -2,13 +2,14 @@
 
 use App\Http\Controllers\{
     Auth\AuthController,
+    Auth\VerifyEmailController,
+    Auth\EmailVerificationNotificationController,
     GeneralController,
     MetaverseController,
     MetaverseUserController,
     SettingsController,
     TemplateController
 };
-use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -33,6 +34,10 @@ Route::prefix('v1')->group(function () {
 
     Route::get("/testEmail", [GeneralController::class, "getEmailTemplate"]);
     Route::post("/smtp/email", [GeneralController::class, "testEmail"]);
+
+    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+        ->middleware(['throttle:1,2', 'auth:sanctum'])
+        ->name('verification.send');
 
     Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 

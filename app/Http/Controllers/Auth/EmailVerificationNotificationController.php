@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -12,14 +13,18 @@ class EmailVerificationNotificationController extends Controller
     /**
      * Send a new email verification notification.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(env('FRONT_URL') . RouteServiceProvider::HOME_FRONT . '?verified=1');
+            return response()->json([
+                "message" => "Email already verified!"
+            ]);
         }
 
         $request->user()->sendEmailVerificationNotification();
 
-        return back()->with('status', 'verification-link-sent');
+        return response()->json([
+            "message" => "Verification link sent!"
+        ]);
     }
 }
