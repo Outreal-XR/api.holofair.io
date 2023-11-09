@@ -35,6 +35,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('invites', function (Request $request) {
+            //by ip and id of the invite
+            return Limit::perMinutes(5, 1)->by($request->ip() . $request->route('id'));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

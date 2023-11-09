@@ -25,9 +25,6 @@ Route::prefix('v1')->group(function () {
     Route::get("/add-settings", [SettingsController::class, "addSettings"]);
     Route::get("/test-observer", [SettingsController::class, "testObserver"]);
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
 
     //public routes
     Route::get('/metaverses/{ismtpd}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
@@ -35,9 +32,14 @@ Route::prefix('v1')->group(function () {
     Route::get("/testEmail", [GeneralController::class, "getEmailTemplate"]);
     Route::post("/smtp/email", [GeneralController::class, "testEmail"]);
 
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware(['throttle:1,2', 'auth:sanctum'])
-        ->name('verification.send');
+    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::middleware(['auth'])->group(function () {
+        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+            ->middleware(['throttle:1,5'])
+            ->name('verification.send');
+    });
 
     Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
@@ -73,8 +75,8 @@ Route::prefix('v1')->group(function () {
             Route::get("/{id}/emails/search", [MetaverseUserController::class, "searchEmails"])->where('id', '[0-9]+');
             Route::post('/{id}/users/invite', [MetaverseUserController::class, 'sendInvite'])->where('id', '[0-9]+');
             Route::get('/{id}/collaborators', [MetaverseUserController::class, 'getCollaborators'])->where('id', '[0-9]+');
-            Route::post('/invites/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+')->middleware(['metaverse.canEdit']);
-            Route::post('/invites/{id}/resend', [MetaverseUserController::class, 'resendInvite'])->where('id', '[0-9]+');
+            Route::post('/invites/{id}/update', [MetaverseUserController::class, 'updateInvite'])->where('id', '[0-9]+'); //->middleware(['metaverse.canEdit']);
+            Route::post('/invites/{id}/resend', [MetaverseUserController::class, 'resendInvite'])->where('id', '[0-9]+')->middleware(['throttle:invites']);
             Route::get('/{id}/invites/{invite_id}/check', [MetaverseUserController::class, 'checkInvite']);
             Route::put('/{id}/invites/{invite_id}/accept', [MetaverseUserController::class, 'acceptInvite']);
             Route::put('/{id}/invites/{invite_id}/reject', [MetaverseUserController::class, 'rejectInvite']);
