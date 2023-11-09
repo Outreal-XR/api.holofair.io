@@ -31,10 +31,9 @@ class AuthController extends Controller
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            'phone_number' => $request->has('phone_number') ? $request->phone_number : null,
+            'phone_number' =>  $request->has('phone_number') ? $request->phone_number : null,
             'email' => strtolower($request->email),
             'password' => Hash::make($request->password),
-            "phone_number" => $request->has("phone_number") ? $request->phone_number : null,
         ]);
 
         $user->assignRole('user');
@@ -56,7 +55,7 @@ class AuthController extends Controller
                 ],
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
-                'token' => $user->createToken('auth_token')->plainTextToken
+                'token' => $user->createToken($user->email)->plainTextToken
             ]
         ], 200);
     }
@@ -103,10 +102,17 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User retrieved successfully',
             'data' => [
-                'id' => $request->user()->id,
-                'first_name' => $request->user()->first_name,
-                'last_name' => $request->user()->last_name,
-                'email' => $request->user()->email,
+                'user' => [
+                    'id' => $request->user()->id,
+                    'first_name' => $request->user()->first_name,
+                    'last_name' => $request->user()->last_name,
+                    'uuid' => $request->user()->uuid,
+                    'registered_at' => $request->user()->created_at,
+                    'isVerified' => $request->user()->hasVerifiedEmail(),
+                ],
+                'roles' => $request->user()->getRoleNames(),
+                'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                'token' => $request->user()->createToken($request->user()->email)->plainTextToken
             ]
         ], 200);
     }
