@@ -35,7 +35,8 @@ Route::prefix('v1')->group(function () {
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
-    Route::middleware(['auth'])->group(function () {
+
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
             ->middleware(['throttle:1,5'])
             ->name('verification.send');
