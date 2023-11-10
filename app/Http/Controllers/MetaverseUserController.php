@@ -112,7 +112,8 @@ class MetaverseUserController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                "message" => "Something went wrong"
+                "message" => "Something went wrong",
+                "error" => $e->getMessage()
             ], 500);
         }
     }
