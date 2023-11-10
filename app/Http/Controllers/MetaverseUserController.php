@@ -103,7 +103,7 @@ class MetaverseUserController extends Controller
             ])->render());
 
 
-            $this->brevoApiInstance->sendTransacEmail($email_config);
+            // $this->brevoApiInstance->sendTransacEmail($email_config);
             DB::commit();
 
             return response()->json([
