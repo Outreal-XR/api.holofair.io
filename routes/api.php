@@ -4,6 +4,8 @@ use App\Http\Controllers\{
     Auth\AuthController,
     Auth\VerifyEmailController,
     Auth\EmailVerificationNotificationController,
+    Auth\PasswordResetLinkController,
+    Auth\NewPasswordController,
     GeneralController,
     MetaverseController,
     MetaverseUserController,
@@ -16,21 +18,15 @@ Route::prefix('v1')->group(function () {
     Route::post('/signup', [AuthController::class, 'signup']);
     Route::post('/signin', [AuthController::class, 'login']);
 
-    Route::get("/test", function () {
-        return response()->json([
-            "message" => "Hello World"
-        ]);
-    });
-
-    Route::get("/add-settings", [SettingsController::class, "addSettings"]);
-    Route::get("/test-observer", [SettingsController::class, "testObserver"]);
-
-
     //public routes
     Route::get('/metaverses/{ismtpd}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
 
     Route::get("/testEmail", [GeneralController::class, "getEmailTemplate"]);
     Route::post("/smtp/email", [GeneralController::class, "testEmail"]);
+
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->name('password.store');
 
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
