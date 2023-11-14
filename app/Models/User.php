@@ -118,4 +118,26 @@ class User extends Authenticatable implements MustVerifyEmail
             ]
         );
     }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $url = env('FRONT_URL') . '/password-change?token=' . $token;
+
+        $sendSmtpEmail = new SendSmtpEmail();
+        $sendSmtpEmail->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $sendSmtpEmail->setTo(array(array('name' => $this->fullName(), 'email' => $this->email)));
+        $sendSmtpEmail->setHtmlContent(view('emails.reset-password')->with([
+            'url' => $url
+        ])->render());
+        $sendSmtpEmail->setSubject('Reset Password');
+
+        $config = Configuration::getDefaultConfiguration()->setApiKey('api-key', env('BREVO_API_KEY'));
+        $brevoApiInstance = new TransactionalEmailsApi(new Client(), $config);
+
+        try {
+            return $brevoApiInstance->sendTransacEmail($sendSmtpEmail);
+        } catch (Exception $e) {
+            echo 'Exception when calling TransactionalEmailsApi->sendTransacEmail: ', $e->getMessage(), PHP_EOL;
+        }
+    }
 }
