@@ -44,19 +44,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'User created successfully',
-            'data' => [
-                'user' => [
-                    'id' => $user->id,
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    "uuid" => $user->uuid,
-                    "registered_at" => $user->created_at,
-                    'isVerified' => $user->hasVerifiedEmail(),
-                ],
-                'roles' => $user->getRoleNames(),
-                'permissions' => $user->getAllPermissions()->pluck('name'),
-                'token' => $user->createToken($user->email)->plainTextToken
-            ]
+            'access_token' => $user->createToken($user->email)->plainTextToken
         ], 200);
     }
 
@@ -76,19 +64,7 @@ class AuthController extends Controller
             $user = Auth::user();
             return response()->json([
                 'message' => 'Logged in successfully',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'first_name' => $user->first_name,
-                        'last_name' => $user->last_name,
-                        "uuid" => $user->uuid,
-                        "registered_at" => $user->created_at,
-                        'isVerified' => $user->hasVerifiedEmail(),
-                    ],
-                    'roles' => $user->getRoleNames(),
-                    'permissions' => $user->getAllPermissions()->pluck('name'),
-                    'token' => $user->createToken($user->email)->plainTextToken
-                ]
+                'access_token' => $user->createToken($user->email)->plainTextToken
             ], 200);
         } else {
             return response()->json([
@@ -99,20 +75,19 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
+        //user with roles names and permissions names
+        $user = $request->user()->load('roles:name', 'permissions:name');
         return response()->json([
             'message' => 'User retrieved successfully',
-            'data' => [
-                'user' => [
-                    'id' => $request->user()->id,
-                    'first_name' => $request->user()->first_name,
-                    'last_name' => $request->user()->last_name,
-                    'uuid' => $request->user()->uuid,
-                    'registered_at' => $request->user()->created_at,
-                    'isVerified' => $request->user()->hasVerifiedEmail(),
-                ],
-                'roles' => $request->user()->getRoleNames(),
-                'permissions' => $request->user()->getAllPermissions()->pluck('name'),
-                'token' => $request->user()->createToken($request->user()->email)->plainTextToken
+            'user' => [
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                "uuid" => $user->uuid,
+                "registered_at" => $user->created_at,
+                'isVerified' => $user->hasVerifiedEmail(),
+                "roles" => $user->getRoleNames(),
+                "permissions" => $user->getAllPermissions()->pluck('name')
             ]
         ], 200);
     }
