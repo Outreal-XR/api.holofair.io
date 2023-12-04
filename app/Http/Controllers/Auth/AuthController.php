@@ -83,6 +83,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
+                "email" => $user->email,
+                'avatar' => asset($user->avatar),
                 "uuid" => $user->uuid,
                 "registered_at" => $user->created_at,
                 'isVerified' => $user->hasVerifiedEmail(),
@@ -120,6 +122,7 @@ class AuthController extends Controller
 
         if ($request->has('email')) {
             $user->email = strtolower($request->email);
+            $user->email_verified_at = null;
         }
 
         if ($request->has('current_password')) {
@@ -140,6 +143,10 @@ class AuthController extends Controller
         }
 
         $user->save();
+
+        if ($request->has('email')) {
+            $user->sendEmailVerificationNotification();
+        }
 
         return response()->json([
             'message' => 'Profile updated successfully',
