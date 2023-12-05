@@ -106,19 +106,24 @@ class GeneralController extends Controller
             ], 400);
         }
 
+        $response = [
+            'filename' => '',
+            'url' => '',
+            'message' => ''
+        ];
+
         //check if file is string
         if (is_string($request->file)) {
             /**
              * @todo find the link of the file and save it in the database           
              */
+
+            $response['message'] = 'String file';
         } else {
             $file = $request->file('file');
-            $extension = $file->getClientOriginalExtension();
             $filename = $file->getClientOriginalName();
 
             $s3Destination = 'props/variables/';
-
-            $fullFileName = $filename . '.' . $extension;
 
             $s3Client = new S3Client([
                 'region' => env('AWS_DEFAULT_REGION'),
@@ -132,29 +137,21 @@ class GeneralController extends Controller
                 $upload = $s3Client->putObject([
                     'Bucket' => env('AWS_BUCKET'),
                     'Key' => $s3Destination . $filename,
-                    'Body' => $file,
+                    'Body' => file_get_contents($file),
 
                 ]);
                 $dest = str_replace("holofair-mena.s3.me-south-1.amazonaws.com", "cdn.holofair.net", $upload['ObjectURL']);
 
-                // $upload = Storage::disk('s3')->put($s3Destination . $filename, $file);
-
-                // if ($upload) {
-                // $url = Storage::disk("s3")->url($s3Destination . $filename);
-                return response()->json([
-                    "filename" => $filename,
-                    'url' => $dest
-                ], 200);
-                // } else {
-                //     return response()->json([
-                //         'error' => 'failed to save the file in s3'
-                //     ], 400);
-                // }
+                $response["filename"] = $filename;
+                $response['url'] = $dest;
+                $response['message'] = $filename . ' Uploaded successfully';
             } catch (S3Exception $e) {
                 return response()->json([
                     'awsError' => $e->getMessage()
                 ], 400);
             }
         }
+
+        return response()->json($response, 200);
     }
 }
