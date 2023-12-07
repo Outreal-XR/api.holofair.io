@@ -94,108 +94,64 @@ class GeneralController extends Controller
         }
     }
 
-    public function testBinary(Request $request)
+    public function uploadPropVariablesFile(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            "file" => "required",
+        ]);
 
-        $encodedFile = $request->file;
-        $prop_key = $request->key;
-        $decodedContent = base64_decode($encodedFile);
-
-        $localDecodedFilePath = "props/images/";
-        $s3Destination = 'props/images/';
-        $extension = '.png';
-        $filename =  $prop_key . $extension;
-
-        if (!file_exists(public_path($localDecodedFilePath))) {
-            mkdir(public_path($localDecodedFilePath), 0777, true);
-        }
-
-        $localFile = public_path($localDecodedFilePath . $filename);
-
-        //save the file locally
-        $save = file_put_contents($localFile, $decodedContent);
-
-        if (!$save) {
+        if ($validator->fails()) {
             return response()->json([
-                'error' => 'failed to save the image locally'
+                "message" => $validator->errors()->first()
             ], 400);
         }
 
-        try {
-            $path = Storage::disk('s3')->put($s3Destination . $filename, file_get_contents($localFile));
+        $response = [
+            'filename' => '',
+            'url' => '',
+            'message' => ''
+        ];
 
-            if ($path) {
-                $url =  Storage::disk("s3")->url($s3Destination . $filename);
-                $destination =
-                    str_replace("holofair-mena.s3.me-south-1.amazonaws.com", "cdn.holofair.net", $url);
+        //check if file is string
+        if (is_string($request->file)) {
+            /**
+             * @todo find the link of the file and save it in the database           
+             */
 
+            $response['message'] = 'String file';
+        } else {
+            $file = $request->file('file');
+            $filename = $file->getClientOriginalName();
+
+            $s3Destination = 'props/variables/';
+
+            $s3Client = new S3Client([
+                'region' => env('AWS_DEFAULT_REGION'),
+                'version' => 'latest',
+                'credentials' => [
+                    'key' => env('AWS_ACCESS_KEY_ID'),
+                    'secret' => env('AWS_SECRET_ACCESS_KEY'),
+                ]
+            ]);
+            try {
+                $upload = $s3Client->putObject([
+                    'Bucket' => env('AWS_BUCKET'),
+                    'Key' => $s3Destination . $filename,
+                    'Body' => file_get_contents($file),
+
+                ]);
+                $dest = str_replace("holofair-mena.s3.me-south-1.amazonaws.com", "cdn.holofair.net", $upload['ObjectURL']);
+
+                $response["filename"] = $filename;
+                $response['url'] = $dest;
+                $response['message'] = $filename . ' Uploaded successfully';
+            } catch (S3Exception $e) {
                 return response()->json([
-                    'url' => $destination
-                ], 200);
-            } else {
-                return response()->json([
-                    'error' => 'failed to save the image 0in s3'
+                    'awsError' => $e->getMessage()
                 ], 400);
             }
-        } catch (S3Exception $e) {
-            return response()->json([
-                'awsError' => $e->getMessage()
-            ], 400);
         }
-    }
 
-    public function testEmail()
-    {
-
-        dd(Str::uuid()->toString());
-
-
-        // $apiInstance = $this->brevoApiInstance;
-
-        // $sendSmtpEmail = new SendSmtpEmail([
-        //     'subject' => 'Test email from HoloFair - Brevo API',
-        //     'sender' =>  ['name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'],
-        //     'to' => [['name' => 'Asmaa Hamid', 'email' => 'asmaa99haim@gmail.com']],
-        //     'templateId' => 7,
-        //     'params' => [
-        //         'firstname' => 'Asmaa',
-        //         'verificationlink' => 'https://test.com/verify/email/1234567890'
-        //     ]
-        // ]);
-
-        // try {
-        //     $result = $apiInstance->sendTransacEmail($sendSmtpEmail);
-        //     return response()->json([
-        //         "message" => "email sent",
-        //         "result" => $result
-
-        //     ], 200);
-        // } catch (Exception $e) {
-        //     return response()->json([
-        //         "message" => "email not sent",
-        //         "error" => $e->getMessage()
-
-        //     ], 400);
-        // }
-
-        // $details = [
-        //     "title" => 'Test email from HoloFair',
-        //     "body" => "Welcome to HoloFair",
-        // ];
-
-        // Mail::to('sender-email')->send(new testEmail($details));
-
-        // return response()->json([
-        //     "message" => "email sent"
-        // ], 200);
-    }
-
-    public function getEmailTemplate()
-    {
-        return view('emails.test')->with([
-            'name' => 'Asmaa Hamid',
-            'body' => 'Welcome to HoloFair',
-            'url' => 'https://holofair.net'
-        ]);
+        return response()->json($response, 200);
     }
 }

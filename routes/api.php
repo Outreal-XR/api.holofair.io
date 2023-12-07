@@ -19,10 +19,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/signin', [AuthController::class, 'login']);
 
     //public routes
-    Route::get('/metaverses/{ismtpd}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
-
-    Route::get("/testEmail", [GeneralController::class, "getEmailTemplate"]);
-    Route::post("/smtp/email", [GeneralController::class, "testEmail"]);
+    Route::get('/metaverses/{id}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
     Route::post('reset-password', [NewPasswordController::class, 'store'])
@@ -43,6 +40,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
         Route::post('/user/update', [AuthController::class, 'update']);
+
+        Route::post('/props/variables/upload', [GeneralController::class, 'uploadPropVariablesFile']);
 
         Route::prefix('users')->group(function () {
         });
