@@ -2,10 +2,6 @@
 
 use App\Http\Controllers\{
     Auth\AuthController,
-    Auth\VerifyEmailController,
-    Auth\EmailVerificationNotificationController,
-    Auth\PasswordResetLinkController,
-    Auth\NewPasswordController,
     GeneralController,
     MetaverseController,
     MetaverseUserController,
@@ -15,29 +11,8 @@ use App\Http\Controllers\{
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    Route::post('/signup', [AuthController::class, 'signup']);
-    Route::post('/signin', [AuthController::class, 'login']);
-
-    //public routes
-    Route::get('/metaverses/{id}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
-
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
-
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-
-    Route::middleware(['auth:sanctum'])->group(function () {
-        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-            ->middleware(['throttle:1,5'])
-            ->name('verification.send');
-    });
 
     Route::middleware(['auth:sanctum', 'verified'])->group(function () {
-
-        Route::get('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
         Route::post('/user/update', [AuthController::class, 'update']);
 
@@ -47,7 +22,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::prefix('metaverses')->group(function () {
-            Route::post('/', [MetaverseController::class, 'createMetaverseFromTemplate']);
+            Route::post('/', [MetaverseController::class, 'create']);
             Route::get("/user", [MetaverseController::class, "getMetaversesByUser"]);
             Route::get('/shared', [MetaverseController::class, 'getSharedMetaverses']);
             Route::get('/check-uniqueness', [MetaverseController::class, 'checkUniqueness']);
@@ -84,11 +59,15 @@ Route::prefix('v1')->group(function () {
             Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
             Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updateMetaverseSetting'])->middleware(['metaverse.canEdit'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
         });
-
-        Route::prefix("templates")->group(function () {
-            Route::get("/", [TemplateController::class, "index"]);
-        });
     });
+
+    //public routes
+    Route::get('/metaverses/{id}/public', [MetaverseController::class, 'getMetaverseById'])->where('id', '[0-9]+');
+
+    Route::prefix("templates")->group(function () {
+        Route::get("/", [TemplateController::class, "index"]);
+    });
+
     Route::prefix("props")->group(function () {
         Route::post("/upload", [GeneralController::class, "uploadPropImages"]);
     });
@@ -96,3 +75,6 @@ Route::prefix('v1')->group(function () {
         Route::get('/{metaverse_id}/platforms/{platform_id}/addrassables', [MetaverseController::class, 'getMetaverseAddrassablesLinks']);
     });
 });
+
+//load auth routes
+require __DIR__ . '/auth.php';
