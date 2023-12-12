@@ -143,4 +143,24 @@ trait MetaverseTrait
             throw new \Exception("Something went wrong, could not create metaverse. Error: " . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * Generate a unique metaverse name from user's first name and last name
+     * @param string $firstName
+     * @param string $lastName
+     * @return string
+     */
+    public function generateMetaverseName($firstName, $lastName)
+    {
+        $metaverseName = $firstName . " " . $lastName . "'s Metaverse";
+        $metaverseName = str_replace(" ", "-", $metaverseName);
+        $metaverseName = strtolower($metaverseName);
+
+        $metaverse = Metaverse::where('name', $metaverseName)->first();
+        if ($metaverse) {
+            $metaverseName = $metaverseName . "-" . Str::random(5);
+        }
+
+        return $metaverseName;
+    }
 }

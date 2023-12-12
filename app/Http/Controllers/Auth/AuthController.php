@@ -49,6 +49,9 @@ class AuthController extends Controller
         $metaverse = null;
         if ($request->has('template_id')) {
             try {
+                //generate unique metaverse name
+                $metaverseName = $this->generateMetaverseName($user->first_name, $user->last_name);
+                $request->merge(['name' => $metaverseName]);
                 $metaverse = $this->createNewMetaverse($request);
             } catch (\Exception $e) {
                 return response()->json([
@@ -84,6 +87,9 @@ class AuthController extends Controller
             $metaverse = null;
             if ($request->has('template_id')) {
                 try {
+                    //generate unique metaverse name
+                    $metaverseName = $this->generateMetaverseName($user->first_name, $user->last_name);
+                    $request->merge(['name' => $metaverseName]);
                     $metaverse = $this->createNewMetaverse($request);
                 } catch (\Exception $e) {
                     return response()->json([
