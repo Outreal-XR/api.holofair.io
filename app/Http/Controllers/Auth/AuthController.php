@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Traits\MetaverseTrait;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
+    use MetaverseTrait;
     //sign up
     public function signup(Request $request)
     {
@@ -21,7 +23,8 @@ class AuthController extends Controller
             'last_name' => 'required|string',
             'phone_number' => 'unique:users,phone_number|nullable',
             'email' => 'required|string|unique:users',
-            'password' => 'required|string|min:8|confirmed|different:username'
+            'password' => 'required|string|min:8|confirmed|different:username',
+            'template_id' => 'integer|exists:templates,id|nullable',
         ]);
 
         if ($validator->fails()) {
@@ -42,9 +45,25 @@ class AuthController extends Controller
 
         Auth::login($user);
 
+        //if template_id is provided, create a metaverse from the template
+        $metaverse = null;
+        if ($request->has('template_id')) {
+            try {
+                //generate unique metaverse name
+                $metaverseName = $this->generateMetaverseName($user->first_name, $user->last_name);
+                $request->merge(['name' => $metaverseName]);
+                $metaverse = $this->createNewMetaverse($request);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], $e->getCode());
+            }
+        }
+
         return response()->json([
             'message' => 'User created successfully',
-            'access_token' => $user->createToken($user->email)->plainTextToken
+            'access_token' => $user->createToken($user->email)->plainTextToken,
+            'metaverse' => $metaverse
         ], 200);
     }
 
@@ -53,7 +72,8 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|exists:users',
-            'password' => 'required|string|min:8'
+            'password' => 'required|string|min:8',
+            'template_id' => 'integer|exists:templates,id|nullable',
         ]);
 
         if ($validator->fails()) {
@@ -62,9 +82,26 @@ class AuthController extends Controller
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             $user = Auth::user();
+
+            //if template_id is provided, create a metaverse from the template
+            $metaverse = null;
+            if ($request->has('template_id')) {
+                try {
+                    //generate unique metaverse name
+                    $metaverseName = $this->generateMetaverseName($user->first_name, $user->last_name);
+                    $request->merge(['name' => $metaverseName]);
+                    $metaverse = $this->createNewMetaverse($request);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => $e->getMessage()
+                    ], $e->getCode());
+                }
+            }
+
             return response()->json([
                 'message' => 'Logged in successfully',
-                'access_token' => $user->createToken($user->email)->plainTextToken
+                'access_token' => $user->createToken($user->email)->plainTextToken,
+                'metaverse' => $metaverse
             ], 200);
         } else {
             return response()->json([

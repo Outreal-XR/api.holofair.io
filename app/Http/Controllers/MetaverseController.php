@@ -17,6 +17,7 @@ use App\Models\Template;
 use App\Models\User;
 use App\Models\VariablePerItem;
 use App\Traits\MediaTrait;
+use App\Traits\MetaverseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,22 @@ use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 
 class MetaverseController extends Controller
 {
-    use MediaTrait;
+    use MediaTrait, MetaverseTrait;
+
+    public function create(Request $request)
+    {
+        try {
+            $metaverse = $this->createNewMetaverse($request);
+            return response()->json([
+                "message" => "Metaverse created successfully",
+                "metaverse" => $metaverse
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => $e->getMessage()
+            ], $e->getCode());
+        }
+    }
 
     /**
      * Create a new metaverse (wether from template or blank | blank metaverses are also from template (blank template)) 
