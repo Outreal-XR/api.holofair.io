@@ -126,7 +126,8 @@ class AuthController extends Controller
                 "registered_at" => $user->created_at,
                 'isVerified' => $user->hasVerifiedEmail(),
                 "roles" => $user->getRoleNames(),
-                "permissions" => $user->getAllPermissions()->pluck('name')
+                "permissions" => $user->getAllPermissions()->pluck('name'),
+                'subscriptionPlan' => $user->subscription()->with('plan')->first(),
             ]
         ], 200);
     }
