@@ -75,6 +75,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(InvitedUser::class, 'email', 'email');
     }
 
+    public function subscription()
+    {
+        return $this->hasOne(UserSubscription::class, 'user_id', 'id');
+    }
+
     /**
      * Get the full name of the user.
      * @return string
@@ -89,7 +94,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $url = $this->verificationUrl();
 
         $sendSmtpEmail = new SendSmtpEmail();
-        $sendSmtpEmail->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $sendSmtpEmail->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $sendSmtpEmail->setTo(array(array('name' => $this->fullName(), 'email' => $this->email)));
         $sendSmtpEmail->setTemplateId(7);
         $sendSmtpEmail->setParams(array(
@@ -124,7 +129,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $url = env('FRONT_URL') . '/password-change?token=' . $token;
 
         $sendSmtpEmail = new SendSmtpEmail();
-        $sendSmtpEmail->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $sendSmtpEmail->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $sendSmtpEmail->setTo(array(array('name' => $this->fullName(), 'email' => $this->email)));
         $sendSmtpEmail->setHtmlContent(view('emails.reset-password')->with([
             'url' => $url

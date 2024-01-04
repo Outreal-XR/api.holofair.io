@@ -71,7 +71,7 @@ class MetaverseUserController extends Controller
         }
 
         $email_config = new SendSmtpEmail();
-        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $email_config->setTo(array(array('email' => $request->email, 'name' => $user->fullName())));
         $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
 
@@ -173,7 +173,7 @@ class MetaverseUserController extends Controller
         }
 
         $email_config = new SendSmtpEmail();
-        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
         $email_config->setSubject('Role updated in ' . $metaverse->name);
 
@@ -243,7 +243,7 @@ class MetaverseUserController extends Controller
         $metaverse = $invited_user->metaverse;
 
         $email_config = new SendSmtpEmail();
-        $email_config->setSender(array('name' => 'Amrullah Mishelov', 'email' => 'mishelov@outrealxr.com'));
+        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
         $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
 
