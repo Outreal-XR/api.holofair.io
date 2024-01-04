@@ -9,6 +9,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "aws/aws-sdk-php": "^3.295",
         "getbrevo/brevo-php": "^1.0",
         "guzzlehttp/guzzle": "^7.7",
         "laravel/framework": "^10.10",

@@ -5,6 +5,7 @@ use App\Http\Controllers\{
     GeneralController,
     MetaverseController,
     MetaverseUserController,
+    PlanController,
     SettingsController,
     TemplateController
 };
@@ -13,10 +14,19 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:sanctum', 'verified'])->group(function () {
-        Route::get('/user', [AuthController::class, 'user']);
-        Route::post('/user/update', [AuthController::class, 'update']);
-
         Route::post('/props/variables/upload', [GeneralController::class, 'uploadPropVariablesFile']);
+
+        Route::prefix('plans')->group(function () {
+            Route::get('/', [PlanController::class, 'getPlans']);
+            Route::get('/current', [PlanController::class, 'getUserCurrentPlan']);
+            Route::post('/', [PlanController::class, 'addFreePlanToUsers']);
+            Route::put('/{id}', [PlanController::class, 'subscribe'])->where('id', '[0-9]+');
+        });
+
+        Route::prefix('user')->group(function () {
+            Route::get('/', [AuthController::class, 'user']);
+            Route::post('/update', [AuthController::class, 'update']);
+        });
 
         Route::prefix('users')->group(function () {
         });
