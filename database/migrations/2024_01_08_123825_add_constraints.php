@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::table('payments', function (Blueprint $table) {
             $table->foreign('subscription_id')->references('id')->on('subscriptions')->onDelete('cascade');
         });
+
+        Schema::table('subscriptions', function (Blueprint $table) {
+            $table->foreign('plan_id')->references('id')->on('plans')->onDelete('cascade');
+        });
     }
 
     /**
@@ -23,6 +27,10 @@ return new class extends Migration
     {
         Schema::table('payments', function (Blueprint $table) {
             $table->dropForeign(['subscription_id']);
+        });
+
+        Schema::table('subscriptions', function (Blueprint $table) {
+            $table->dropForeign(['plan_id']);
         });
     }
 };
