@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('plan_id')->constrained();
+            $table->unsignedBigInteger('plan_id');
             $table->foreignId('payment_id')->nullable()->constrained('payments');
             $table->foreignId('user_id')->constrained();
             $table->string('session_id')->unique();
