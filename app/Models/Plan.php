@@ -11,26 +11,36 @@ class Plan extends Model
 
     protected $fillable = [
         'name',
+        'description',
         'price',
-        'duration_type', // 'monthly', 'yearly
+        'interval', // 'month', 'year        
+        'stripe_plan_id',
+        'lookup_key',
     ];
 
     protected $appends = ['isCurrentPlan'];
 
     public function getIsCurrentPlanAttribute()
     {
-        $user = auth()->user();
+        // $user = auth()->user();
 
-        if (!$user) {
-            return false;
-        }
+        // if (!$user) {
+        //     return false;
+        // }
 
-        $userCurrentPlan = $user->subscription;
+        // $userCurrentPlan = $user->subscription;
 
-        if (!$userCurrentPlan) {
-            return false;
-        }
+        // if (!$userCurrentPlan) {
+        //     return false;
+        // }
 
-        return $userCurrentPlan->plan_id === $this->id;
+        // return $userCurrentPlan->plan_id === $this->id;
+
+        return false;
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'plan_id', 'id');
     }
 }
