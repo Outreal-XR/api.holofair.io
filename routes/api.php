@@ -5,6 +5,7 @@ use App\Http\Controllers\{
     GeneralController,
     MetaverseController,
     MetaverseUserController,
+    PaymentController,
     PlanController,
     SettingsController,
     TemplateController
@@ -19,8 +20,15 @@ Route::prefix('v1')->group(function () {
         Route::prefix('plans')->group(function () {
             Route::get('/', [PlanController::class, 'getPlans']);
             Route::get('/current', [PlanController::class, 'getUserCurrentPlan']);
-            Route::post('/', [PlanController::class, 'addFreePlanToUsers']);
+            // Route::post('/', [PlanController::class, 'addFreePlanToUsers']);
             Route::put('/{id}', [PlanController::class, 'subscribe'])->where('id', '[0-9]+');
+            Route::post('/stripe/create', [PlanController::class, 'createPlanInStripe']);
+        });
+
+        Route::prefix('payments')->group(function () {
+            Route::post('/subscribe/{plan_id}', [PaymentController::class, 'subscribe']);
+            Route::get('/success', [PaymentController::class, 'success'])->name('checkout.success');
+            Route::get('/cancel', [PaymentController::class, 'cancel'])->name('checkout.cancel');
         });
 
         Route::prefix('user')->group(function () {

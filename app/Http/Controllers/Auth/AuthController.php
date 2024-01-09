@@ -98,6 +98,15 @@ class AuthController extends Controller
                 }
             }
 
+            try {
+
+                Auth::login($user);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => $e->getMessage()
+                ], $e->getCode());
+            }
+
             return response()->json([
                 'message' => 'Logged in successfully',
                 'access_token' => $user->createToken($user->email)->plainTextToken,
@@ -117,17 +126,26 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User retrieved successfully',
             'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                "email" => $user->email,
+                ...$user->toArray(),
                 'avatar' => asset($user->avatar),
-                "uuid" => $user->uuid,
-                "registered_at" => $user->created_at,
                 'isVerified' => $user->hasVerifiedEmail(),
-                "roles" => $user->getRoleNames(),
-                "permissions" => $user->getAllPermissions()->pluck('name'),
-                'subscriptionPlan' => $user->subscription()->with('plan')->first(),
+                'roles' => $user->getRoleNames(),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'subscriptionPlan' => $user->plan()->with(['subscriptions' => function ($query) {
+                    $query->where('status', 'paid')->limit(1);
+                }])->first(),
+
+                // 'id' => $user->id,
+                // 'first_name' => $user->first_name,
+                // 'last_name' => $user->last_name,
+                // "email" => $user->email,
+                // 'avatar' => asset($user->avatar),
+                // "uuid" => $user->uuid,
+                // "registered_at" => $user->created_at,
+                // 'isVerified' => $user->hasVerifiedEmail(),
+                // "roles" => $user->getRoleNames(),
+                // "permissions" => $user->getAllPermissions()->pluck('name'),
+                // 'subscriptionPlan' => $user->subscription()->with('plan')->first(),
             ]
         ], 200);
     }
