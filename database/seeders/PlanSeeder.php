@@ -19,43 +19,49 @@ class PlanSeeder extends Seeder
         Plan::create([
             'name' => 'Standard',
             'price' => 29,
-            'duration_type' => 'monthly',
-            'stripe_plan_id' => 'price_1OVCtxEEcid2xo4Iu51LudiH',
+            'interval' => 'month',
+            'stripe_plan_id' => 'price_1OWGFwEEcid2xo4Inz2kapQ5',
+            'lookup_key' => 'standard-month'
         ]);
 
         Plan::create([
             'name' => 'Optimal',
             'price' => 39,
-            'duration_type' => 'monthly',
-            'stripe_plan_id' => 'price_1OVCw5EEcid2xo4I02ZHVsYm'
+            'interval' => 'month',
+            'stripe_plan_id' => 'price_1OWGG9EEcid2xo4I4k6Wfq1k',
+            'lookup_key' => 'optimal-month'
         ]);
 
         Plan::create([
             'name' => 'Maximum',
             'price' => 49,
-            'duration_type' => 'monthly',
-            'stripe_plan_id' => 'price_1OVCy5EEcid2xo4Ira2HIhNg'
+            'interval' => 'month',
+            'stripe_plan_id' => 'price_1OWGGLEEcid2xo4IHRDW5NPF',
+            'lookup_key' => 'maximum-month'
         ]);
 
         Plan::create([
             'name' => 'Standard',
             'price' => 299,
-            'duration_type' => 'yearly',
-            'stripe_plan_id' => 'price_1OVCtxEEcid2xo4ICSY9gn34'
+            'interval' => 'year',
+            'stripe_plan_id' => 'price_1OWGGvEEcid2xo4IpVY17DWG',
+            'lookup_key' => 'standard-year'
         ]);
 
         Plan::create([
             'name' => 'Optimal',
             'price' => 399,
-            'duration_type' => 'yearly',
-            'stripe_plan_id' => 'price_1OVCwnEEcid2xo4IL7BSdMJq'
+            'interval' => 'year',
+            'stripe_plan_id' => 'price_1OWGGiEEcid2xo4IobGVBr5p',
+            'lookup_key' => 'optimal-year'
         ]);
 
         Plan::create([
             'name' => 'Maximum',
             'price' => 499,
-            'duration_type' => 'yearly',
-            'stripe_plan_id' => 'price_1OVCyLEEcid2xo4I8LcP1Fx6'
+            'interval' => 'year',
+            'stripe_plan_id' => 'price_1OWGGYEEcid2xo4IgWyuKGP4',
+            'lookup_key' => 'maximum-year'
         ]);
     }
 }
