@@ -155,30 +155,34 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'first_name' => 'string|nullable',
             'last_name' => 'string|nullable',
-            'email' => 'email|string|unique:users|nullable',
+            //skip unique validation if email is same as current email
+            'email' => 'email|string|nullable|unique:users,email,' . $request->user()->id,
             'current_password' => 'required_with:password|string|min:8|nullable',
             'password' => 'required_with:current_password|string|min:8|confirmed|different:current_password|nullable',
             'password_confirmation' => 'required_with:password|string|min:8|same:password|nullable',
-            'avatar' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable'
+            'avatar' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
+            'delete_avatar' => 'boolean|nullable'
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors()->first(), 400);
         }
 
+        $sendNotification = false;
         $user = $request->user();
 
-        if ($request->has('first_name')) {
+        if ($request->has('first_name') && $request->first_name !== $user->first_name) {
             $user->first_name = $request->first_name;
         }
 
-        if ($request->has('last_name')) {
+        if ($request->has('last_name') && $request->last_name !== $user->last_name) {
             $user->last_name = $request->last_name;
         }
 
-        if ($request->has('email')) {
+        if ($request->has('email') && $request->email !== $user->email) {
             $user->email = strtolower($request->email);
             $user->email_verified_at = null;
+            $sendNotification = true;
         }
 
         if ($request->has('current_password')) {
@@ -198,9 +202,20 @@ class AuthController extends Controller
             $user->avatar = $path;
         }
 
+        if ($request->has('delete_avatar') && $request->delete_avatar) {
+            if ($user->avatar) {
+                $oldAvatar = public_path($user->avatar);
+                if (file_exists($oldAvatar)) {
+                    unlink($oldAvatar);
+                }
+
+                $user->avatar = 'images/avatars/default.jpg';
+            }
+        }
+
         $user->save();
 
-        if ($request->has('email')) {
+        if ($request->has('email') && $sendNotification) {
             $user->sendEmailVerificationNotification();
         }
 
