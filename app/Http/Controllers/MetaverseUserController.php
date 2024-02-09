@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 class MetaverseUserController extends Controller
 {
     /**
-     * Send invite to user to collaborate on metaverse or view it
+     * Send invite to user
      * . For registered users only
      * . Generate token and send it to user email
      * . User can accept or reject the invitation
@@ -31,7 +31,7 @@ class MetaverseUserController extends Controller
      * @return \Illuminate\Http\JsonResponse message
      * @throws \Exception
      */
-    public function sendInvite(Request $request, string $metaverse_id)
+    public function sendInviteOld(Request $request, string $metaverse_id)
     {
         $validation = Validator::make($request->all(), [
             "email" => "required|email",
@@ -117,6 +117,114 @@ class MetaverseUserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Send invite to users by emails
+     * . For registered users only
+     * . Generate token and send it to user email
+     * . User can accept or reject the invitation
+     * . Viewer have status accepted by default
+     * . Every invited user is stored in invited_users table
+     * @param Request $request email, role
+     * @param string $metaverse_id
+     * @return \Illuminate\Http\JsonResponse message
+     * @throws \Exception
+     */
+    public function sendInvite(Request $request, string $metaverse_id)
+    {
+        $validation = Validator::make($request->all(), [
+            "emails" => "required|array",
+            "emails.*" => "required|email",
+            "role" => "required|string|in:viewer,editor,admin"
+        ]);
+
+        if ($validation->fails()) {
+            return response()->json([
+                "message" => $validation->errors()->first()
+            ], 400);
+        }
+
+        $metaverse = Metaverse::findOrfail($metaverse_id);
+        $role = $request->role;
+
+        //authorize user and check if he is allowed to invite
+        $is_authorized = $this->authorizeUser($role, $metaverse);
+        if ($is_authorized !== true) {
+            return $is_authorized;
+        }
+
+        try {
+
+            //if the role is viewer, send the invite directly
+            if ($role === 'viewer') {
+                DB::beginTransaction();
+                try {
+                    foreach ($request->emails as $email) {
+                        $invited_user = InvitedUser::where('email', $email)->where('metaverse_id', $metaverse->id)->first();
+
+                        if ($invited_user) {
+                            if ($invited_user->role === 'viewer') {
+
+                                continue;
+                            } else {
+                                $invited_user->delete();
+                            }
+                        }
+                        $invited_user = $this->addInvite($metaverse, $email, $role);
+
+                        //invite notification
+                        // $this->sendInviteEmail($email, null, $invited_user, $metaverse, $role);
+                    }
+
+                    DB::commit();
+                } catch (Exception $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+            } else {
+                User::whereIn('email', $request->emails)->chunkById(100, function ($users) use ($metaverse, $role) {
+                    DB::beginTransaction();
+                    try {
+                        foreach ($users as $user) {
+                            $invited_user = InvitedUser::where('email', $user->email)->where('metaverse_id', $metaverse->id)->first();
+
+                            if ($invited_user) {
+                                if ($invited_user->role === 'editor') {
+
+                                    continue;
+                                } else {
+                                    $invited_user->delete();
+                                }
+                            }
+
+                            $invited_user = $this->addInvite($metaverse, $user->email, $role);
+
+                            //invite notification
+                            // $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $role);
+                        }
+                        DB::commit();
+                    } catch (Exception $e) {
+                        DB::rollBack();
+                        throw $e;
+                    }
+                });
+
+                return response()->json([
+                    "message" => "Invite sent successfully"
+                ], 200);
+            }
+
+            return response()->json([
+                "message" => "Invite sent successfully"
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                "message" => "Something went wrong",
+                "error" => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     /**
      * Update the role of the invited user
@@ -686,5 +794,44 @@ class MetaverseUserController extends Controller
         $validatity['invitation'] = $invitation;
 
         return $validity;
+    }
+
+    private function addInvite($metaverse, $email, $role)
+    {
+        $invited_user = new InvitedUser();
+        $invited_user->metaverse_id = $metaverse->id;
+        $invited_user->email = $email;
+        $invited_user->role = $role;
+        $invited_user->invited_by = Auth::id();
+        $invited_user->token = time() . Str::random(32);
+        $invited_user->token_expiry = $role === 'viewer' ? null : Carbon::now()->addDays(7);
+        $invited_user->status = $role === 'viewer' ? 'accepted' : 'pending';
+        $invited_user->save();
+
+        return $invited_user;
+    }
+
+    private function sendInviteEmail($email, $name, $invited_user, $metaverse, $role)
+    {
+        $email_config = new SendSmtpEmail();
+        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
+        $email_config->setTo(array(array('email' => $email, 'name' => $name ? $name : $email)));
+        $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
+
+        $invited_userLink = env('FRONT_URL');
+        if ($role === 'viewer') {
+            $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+        } else {
+            $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
+        }
+
+        $email_config->setHtmlContent(view('emails.collaborator-invite', [
+            'metaverseName' => $metaverse->name,
+            'inviterName' => Auth::user()->fullName(),
+            'role' => $role,
+            "url" => $invited_userLink,
+        ])->render());
+
+        $this->brevoApiInstance->sendTransacEmail($email_config);
     }
 }
