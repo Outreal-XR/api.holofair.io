@@ -8,6 +8,7 @@ use App\Models\InvitedUser;
 use App\Models\Metaverse;
 use App\Models\User;
 use App\Notifications\InviteNotification;
+use App\Notifications\MetaverseInviteNotification;
 use Brevo\Client\Model\SendSmtpEmail;
 use Carbon\Carbon;
 use Exception;
@@ -164,7 +165,6 @@ class MetaverseUserController extends Controller
 
                         if ($invited_user) {
                             if ($invited_user->role === 'viewer') {
-
                                 continue;
                             } else {
                                 $invited_user->delete();
@@ -173,6 +173,11 @@ class MetaverseUserController extends Controller
                         $invited_user = $this->addInvite($metaverse, $email, $role);
 
                         //invite notification
+
+                        //in-app notification
+                        $this->sendInviteNotification(null, $email, $invited_user, $metaverse);
+
+                        //email notification
                         // $this->sendInviteEmail($email, null, $invited_user, $metaverse, $role);
                     }
 
@@ -200,6 +205,11 @@ class MetaverseUserController extends Controller
                             $invited_user = $this->addInvite($metaverse, $user->email, $role);
 
                             //invite notification
+
+                            //in-app notification
+                            $this->sendInviteNotification($user, null, $invited_user, $metaverse);
+
+                            //email notification
                             // $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $role);
                         }
                         DB::commit();
@@ -833,5 +843,20 @@ class MetaverseUserController extends Controller
         ])->render());
 
         $this->brevoApiInstance->sendTransacEmail($email_config);
+    }
+
+    private function sendInviteNotification($user = null, $email = null, $invited_user, $metaverse)
+    {
+        $sender = Auth::user();
+        $receiver = $user ? $user : User::where('email', $email)->first();
+
+        if (!$receiver) {
+            return;
+        }
+
+        $invite = new MetaverseInviteNotification($sender, $metaverse, $invited_user);
+        $invite->onQueue('notifications');
+        $invite->delay(now()->addSeconds(5));
+        $receiver->notify($invite);
     }
 }
