@@ -5,6 +5,7 @@ use App\Http\Controllers\{
     GeneralController,
     MetaverseController,
     MetaverseUserController,
+    NotificationController,
     PaymentController,
     PlanController,
     SettingsController,
@@ -76,6 +77,15 @@ Route::prefix('v1')->group(function () {
         Route::prefix('settings')->group(function () {
             Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
             Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updateMetaverseSetting'])->middleware(['metaverse.canEdit'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
+        });
+
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::put('/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
+            Route::put('/{id}/mark-as-unread', [NotificationController::class, 'markAsUnread']);
+            Route::put('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+            Route::delete('/{id}', [NotificationController::class, 'delete']);
+            Route::delete('/', [NotificationController::class, 'deleteAll']);
         });
     });
 
