@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\{
     Auth\AuthController,
+    DashboardSettingController,
     GeneralController,
     MetaverseController,
     MetaverseUserController,
@@ -9,7 +10,8 @@ use App\Http\Controllers\{
     PaymentController,
     PlanController,
     SettingsController,
-    TemplateController
+    TemplateController,
+    UserDashboardSettingController
 };
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +79,13 @@ Route::prefix('v1')->group(function () {
         Route::prefix('settings')->group(function () {
             Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
             Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updateMetaverseSetting'])->middleware(['metaverse.canEdit'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
+
+            Route::prefix('dashboard')->group(function () {
+                Route::post('/', [DashboardSettingController::class, 'create']);
+                Route::get('/', [DashboardSettingController::class, 'index']);
+
+                Route::put('/user', [UserDashboardSettingController::class, 'update']);
+            });
         });
 
         Route::prefix('notifications')->group(function () {

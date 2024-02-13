@@ -85,6 +85,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Plan::class, 'id', 'stripe_plan_id');
     }
 
+    public function dashboardSettings()
+    {
+        return $this->belongsToMany(DashboardSetting::class, 'user_dashboard_settings', 'user_id', 'dashboard_setting_id')
+            ->withPivot('value')
+            ->withTimestamps();
+    }
+
     /**
      * Get the full name of the user.
      * @return string

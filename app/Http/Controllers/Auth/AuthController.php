@@ -131,21 +131,10 @@ class AuthController extends Controller
                 'isVerified' => $user->hasVerifiedEmail(),
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
-                'subscriptionPlan' => $user->plan()->with(['subscriptions' => function ($query) {
+                'subscriptionPlan' => $user->plan()->whereHas('subscriptions', function ($query) {
                     $query->where('status', 'paid')->limit(1);
-                }])->first(),
-
-                // 'id' => $user->id,
-                // 'first_name' => $user->first_name,
-                // 'last_name' => $user->last_name,
-                // "email" => $user->email,
-                // 'avatar' => asset($user->avatar),
-                // "uuid" => $user->uuid,
-                // "registered_at" => $user->created_at,
-                // 'isVerified' => $user->hasVerifiedEmail(),
-                // "roles" => $user->getRoleNames(),
-                // "permissions" => $user->getAllPermissions()->pluck('name'),
-                // 'subscriptionPlan' => $user->subscription()->with('plan')->first(),
+                })->first(),
+                'dashboardSettings' => $user->dashboardSettings,
             ]
         ], 200);
     }
