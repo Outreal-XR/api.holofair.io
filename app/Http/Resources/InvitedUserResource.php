@@ -23,6 +23,7 @@ class InvitedUserResource extends JsonResource
             'role' => $this->role,
             'token' => $this->token,
             'token_expiry' => $this->token_expiry,
+            'is_external' => $this->user ? false : true,
         ];
     }
 }
