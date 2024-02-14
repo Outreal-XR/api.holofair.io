@@ -462,7 +462,8 @@ class MetaverseUserController extends Controller
             ], 404);
         }
 
-        $collaborators = $metaverse->invitedUsers()->orderBy('role', 'asc')->get();
+        $collaborators = $metaverse->invitedUsers()->whereIn('status', ['accepted', 'blocked'])
+            ->with(['user', 'inviter'])->orderBy('role', 'asc')->get();
         $owner = $metaverse->user;
 
         return response()->json([
@@ -578,20 +579,20 @@ class MetaverseUserController extends Controller
             ], 404);
         }
 
-        $user = $invite->user;
+        $user = $invite->user ? $invite->user->fullName() : $invite->email;
         //is isInvite => remove the pending invites only
         if ($isInvite) {
 
             if ($invite->status !== 'pending') {
                 return response()->json([
-                    "message" => "You can't remove " . $user->fullName() . " because he/she already " . $invite->status . " the invite"
+                    "message" => "You can't remove " . $user . " because he/she already " . $invite->status . " the invite"
                 ], 400);
             }
 
             $invite->delete();
 
             return response()->json([
-                "message" => $user->fullName() . " invite deleted successfully",
+                "message" => $user . " invite deleted successfully",
             ], 200);
         } else {
             //else remove the accepted/blocked users
@@ -605,7 +606,7 @@ class MetaverseUserController extends Controller
                 }
 
                 return response()->json([
-                    "message" =>  $user->fullName() . " removed successfully"
+                    "message" =>  $user . " removed successfully"
                 ], 200);
             }
 
