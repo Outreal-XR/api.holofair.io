@@ -3,7 +3,9 @@
 namespace App\Observers;
 
 use App\Models\Metaverse;
+use App\Models\MetaverseSetting;
 use App\Models\Setting;
+use Illuminate\Support\Facades\DB;
 
 class MetaverseObserver
 {
@@ -12,10 +14,20 @@ class MetaverseObserver
      */
     public function created(Metaverse $metaverse): void
     {
-        $settings = Setting::all();
+        //add metaverse settings
+        try {
+            DB::beginTransaction();
 
-        foreach ($settings as $setting) {
-            $metaverse->settings()->attach($setting->id, ['value' => $setting->default_value]);
+            MetaverseSetting::chunkById(1000, function ($settings) use ($metaverse) {
+                foreach ($settings as $setting) {
+                    $metaverse->settings()->attach($setting->id, ['value' => $setting->default_value]);
+                }
+            });
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 

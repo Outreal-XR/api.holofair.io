@@ -5,11 +5,12 @@ use App\Http\Controllers\{
     DashboardSettingController,
     GeneralController,
     MetaverseController,
+    MetaverseSettingController,
     MetaverseUserController,
     NotificationController,
     PaymentController,
     PlanController,
-    SettingsController,
+    SettingPerMetaverseController,
     TemplateController,
     UserDashboardSettingController
 };
@@ -77,8 +78,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/invites/pending', [MetaverseUserController::class, 'getPendingInvitations']);
 
         Route::prefix('settings')->group(function () {
-            Route::get('/metaverse/{id}', [SettingsController::class, 'getMetaverseSettings'])->where('id', '[0-9]+');
-            Route::put('/{id}/metaverse/{metaverse_id}', [SettingsController::class, 'updateMetaverseSetting'])->middleware(['metaverse.canEdit'])->where('id', '[0-9]+')->where('metaverse_id', '[0-9]+');
+            Route::prefix('metaverse')->group(function () {
+                Route::post('/', [MetaverseSettingController::class, 'create']);
+                Route::post('/add', [MetaverseSettingController::class, 'addSettings']);
+
+                Route::post('/{id}', [SettingPerMetaverseController::class, 'create']);
+                Route::put('/{id}', [SettingPerMetaverseController::class, 'update']);
+                Route::get('/{id}', [SettingPerMetaverseController::class, 'index']);
+            });
 
             Route::prefix('dashboard')->group(function () {
                 Route::post('/', [DashboardSettingController::class, 'create']);

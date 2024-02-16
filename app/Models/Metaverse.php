@@ -51,7 +51,7 @@ class Metaverse extends Model
 
     public function settings()
     {
-        return $this->belongsToMany(Setting::class, 'metaverse_settings', 'metaverse_id', 'setting_id')->withPivot('value');
+        return $this->belongsToMany(MetaverseSetting::class, 'settings_per_metaverse', 'metaverse_id', 'metaverse_setting_id')->withPivot('value')->withPivot('id');
     }
 
     public function blockedUsers()
