@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $table) {
+        Schema::create('metaverse_settings', function (Blueprint $table) {
             $table->id();
-            $table->string('category');
+            $table->string('name')->unique();
             $table->string('display_name');
-            $table->string('name');
+            $table->string('description')->nullable();
             $table->text('default_value')->nullable();
-            $table->unsignedBigInteger('parent_id')->nullable()->after('default_value');
-            $table->foreign('parent_id')->references('id')->on('settings')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('settings');
+        Schema::dropIfExists('metaverse_settings');
     }
 };

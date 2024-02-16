@@ -10,18 +10,9 @@ class MetaverseSetting extends Model
     use HasFactory;
 
     protected $fillable = [
-        'metaverse_id',
-        'setting_id',
-        'value',
+        'name',
+        'display_name',
+        'description',
+        'default_value'
     ];
-
-    public function metaverse()
-    {
-        return $this->belongsTo(Metaverse::class);
-    }
-
-    public function setting()
-    {
-        return $this->belongsTo(Setting::class);
-    }
 }
