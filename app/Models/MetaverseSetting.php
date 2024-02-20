@@ -15,4 +15,9 @@ class MetaverseSetting extends Model
         'description',
         'default_value'
     ];
+
+    public function userSettings()
+    {
+        return $this->hasMany(UserSettingPerMetaverse::class, 'metaverse_setting_id');
+    }
 }

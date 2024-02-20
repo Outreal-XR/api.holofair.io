@@ -26,6 +26,7 @@ class Metaverse extends Model
         'is_blocked',
         'is_owner',
         'links',
+        'mapped_user_settings'
     ];
 
     //relations
@@ -69,6 +70,11 @@ class Metaverse extends Model
         return $this->belongsToMany(Language::class, 'languages_per_metaverse', 'metaverse_id', 'language_id')->withTimestamps();
     }
 
+    public function userSettings()
+    {
+        return $this->hasMany(UserSettingPerMetaverse::class, 'metaverse_id');
+    }
+
     //scopes
     public function viewers()
     {
@@ -99,6 +105,28 @@ class Metaverse extends Model
     public function getLinksAttribute()
     {
         return $this->links()->get();
+    }
+
+    public function getMappedUserSettingsAttribute()
+    {
+        //get user settings for the current user and fill the default values based on the metaverse settings
+        $user = Auth::user();
+        if (!$user) {
+            return [];
+        }
+
+        $userSettings = $this->userSettings()->where('user_id', $user->id)->get();
+        $userSettings = $userSettings->keyBy('metaverse_setting_id');
+
+        $metaverseSettings = $this->settings()->get();
+
+        //map the settings and add the user value
+        $settings = $metaverseSettings->map(function ($setting) use ($userSettings) {
+            $setting->userValue = $userSettings->get($setting->id)->value ?? $setting->pivot->value;
+            return $setting;
+        });
+
+        return $settings;
     }
 
     //methods|checkers

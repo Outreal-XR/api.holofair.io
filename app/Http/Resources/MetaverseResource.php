@@ -25,10 +25,13 @@ class MetaverseResource extends JsonResource
             'userid' => $this->userid,
             "user" => $this->user,
             "invitedUsers" => $this->whenLoaded('invitedUsers'),
+            "settings" => $this->whenLoaded('settings'),
+            "languages" => $this->whenLoaded('languages'),
+            "template" => $this->whenLoaded('template'),
+            'mapped_user_settings' => $this->mapped_user_settings,
             'is_collaborator' => $this->is_collaborator,
             'is_blocked' => $this->is_blocked,
             'is_owner' => $this->is_owner,
-            "template" => $this->whenLoaded('template'),
             "links" => $this->links,
         ];
     }
