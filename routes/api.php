@@ -132,6 +132,9 @@ Route::prefix('v1')->group(function () {
     Route::prefix('metaverses')->group(function () {
         Route::get('/{metaverse_id}/platforms/{platform_id}/addrassables', [MetaverseController::class, 'getMetaverseAddrassablesLinks']);
     });
+
+    Route::post('/add-system-languages', [LanguageController::class, 'addLanguages']);
+    Route::post('/add-english-to-metaverses', [LanguageController::class, 'addEnglishToMetaverses']);
 });
 
 //load auth routes
