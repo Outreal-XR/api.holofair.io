@@ -37,7 +37,7 @@ class MetaverseController extends Controller
             $metaverse = $this->createNewMetaverse($request);
             return response()->json([
                 "message" => "Metaverse created successfully",
-                "metaverse" => $metaverse
+                "metaverse" => MetaverseResource::make($metaverse)
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -264,6 +264,9 @@ class MetaverseController extends Controller
     public function getMetaverseById($id)
     {
         $metaverse = Metaverse::findOrfail($id);
+
+        //load relations
+        $metaverse->load(['settings', 'languages']);
 
         return response()->json([
             "data" => MetaverseResource::make($metaverse)

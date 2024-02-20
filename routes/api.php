@@ -9,6 +9,7 @@ use App\Http\Controllers\{
     MetaverseLanguage,
     MetaverseSettingController,
     MetaverseUserController,
+    MetaverseUserSettingController,
     NotificationController,
     PaymentController,
     PlanController,
@@ -96,6 +97,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', [DashboardSettingController::class, 'index']);
 
                 Route::put('/user', [UserDashboardSettingController::class, 'update']);
+            });
+
+            Route::prefix('user')->group(function () {
+                Route::get('/metaverses/{metaverseId}', [MetaverseUserSettingController::class, 'index']);
+                Route::post('/metaverses/{metaverseId}', [MetaverseUserSettingController::class, 'createOrUpdate']);
             });
         });
 
