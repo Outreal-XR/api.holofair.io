@@ -31,7 +31,7 @@ class Metaverse extends Model
     //relations
     public function addressables()
     {
-        return $this->belongsToMany(Addressable::class, 'addressable_per_metaverse', 'metaverseid', 'addressableid');
+        return $this->belongsToMany(Addressable::class, 'addressable_per_metaverse', 'metaverseid', 'addressableid')->withTimestamps();
     }
 
     public function template()
@@ -51,17 +51,22 @@ class Metaverse extends Model
 
     public function settings()
     {
-        return $this->belongsToMany(MetaverseSetting::class, 'settings_per_metaverse', 'metaverse_id', 'metaverse_setting_id')->withPivot('value')->withPivot('id');
+        return $this->belongsToMany(MetaverseSetting::class, 'settings_per_metaverse', 'metaverse_id', 'metaverse_setting_id')->withPivot('value')->withPivot('id')->withTimestamps();
     }
 
     public function blockedUsers()
     {
-        return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id');
+        return $this->belongsToMany(User::class, 'blocked_users', 'metaverse_id', 'blocked_user_id')->withTimestamps();
     }
 
     public function links()
     {
         return $this->hasMany(MetaverseLink::class, 'metaverse_id');
+    }
+
+    public function languages()
+    {
+        return $this->belongsToMany(Language::class, 'languages_per_metaverse', 'metaverse_id', 'language_id')->withTimestamps();
     }
 
     //scopes

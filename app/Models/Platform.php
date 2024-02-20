@@ -16,6 +16,6 @@ class Platform extends Model
     public function addressables()
     {
         return $this->belongsToMany(Addressable::class, 'addressable_per_platform', 'platformid', 'addressableid')
-            ->withPivot('url');
+            ->withPivot('url')->withTimestamps();
     }
 }
