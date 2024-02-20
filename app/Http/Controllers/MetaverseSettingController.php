@@ -25,12 +25,8 @@ class MetaverseSettingController extends Controller
             [
                 "display_name" => "Language by default",
                 "name" => "default_language",
-                "default_value" => "english",
+                "default_value" => "en",
 
-            ],
-            [
-                "display_name" => "Additional languages",
-                "name" => "additional_languages",
             ],
             [
                 "display_name" => "Graphic settings by default",

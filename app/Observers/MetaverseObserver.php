@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Language;
 use App\Models\Metaverse;
 use App\Models\MetaverseSetting;
 use App\Models\Setting;
@@ -29,6 +30,10 @@ class MetaverseObserver
             DB::rollBack();
             throw $e;
         }
+
+        //add default language
+        $englishLanguage = Language::where('code', 'en')->first();
+        $metaverse->languages()->attach($englishLanguage->id);
     }
 
     /**

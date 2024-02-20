@@ -4,7 +4,9 @@ use App\Http\Controllers\{
     Auth\AuthController,
     DashboardSettingController,
     GeneralController,
+    LanguageController,
     MetaverseController,
+    MetaverseLanguage,
     MetaverseSettingController,
     MetaverseUserController,
     NotificationController,
@@ -59,6 +61,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/invites/{invite_id}/unblock', [MetaverseUserController::class, 'unblockUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
                 Route::delete('/{id}/invites/{invite_id}', [MetaverseUserController::class, 'removeUser'])->where('id', '[0-9]+')->where('invite_id', '[0-9]+');
                 Route::post('/{id}/links', [MetaverseController::class, 'addLink'])->where('id', '[0-9]+');
+                Route::get('/{id}/languages', [MetaverseLanguage::class, 'index'])->where('id', '[0-9]+');
+                Route::post('/{id}/languages', [MetaverseLanguage::class, 'create'])->where('id', '[0-9]+');
             });
 
             Route::middleware(['metaverse.owner'])->group(function () {
@@ -102,6 +106,16 @@ Route::prefix('v1')->group(function () {
             Route::put('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
             Route::delete('/{id}', [NotificationController::class, 'delete']);
             Route::delete('/', [NotificationController::class, 'deleteAll']);
+        });
+
+        Route::prefix('languages')->group(function () {
+            Route::post('/', [LanguageController::class, 'create']);
+            Route::get('/', [LanguageController::class, 'getLanguages']);
+        });
+
+        Route::prefix('languages')->group(function () {
+            Route::get('/', [LanguageController::class, 'index']);
+            Route::post('/', [LanguageController::class, 'create']);
         });
     });
 

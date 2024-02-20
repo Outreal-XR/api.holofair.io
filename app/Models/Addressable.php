@@ -18,12 +18,12 @@ class Addressable extends Model
 
     public function metaverses()
     {
-        return $this->belongsToMany(Metaverse::class, 'addressable_per_metaverse', 'addressableid', 'metaverseid');
+        return $this->belongsToMany(Metaverse::class, 'addressable_per_metaverse', 'addressableid', 'metaverseid')->withTimestamps();
     }
 
     public function platforms()
     {
         return $this->belongsToMany(Platform::class, 'addressable_per_platform', 'addressableid', 'platformid')
-            ->withPivot('url');
+            ->withPivot('url')->withTimestamps();
     }
 }
