@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Metaverse;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,7 +49,7 @@ class MetaverseUserSettingController extends Controller
         $user = Auth::user();
 
         //find the metaverse
-        $metaverse = $user->metaverses->find($metaverseId);
+        $metaverse = Metaverse::findOrFail($metaverseId);
 
         if (!$metaverse) {
             return response()->json([

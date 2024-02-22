@@ -100,8 +100,8 @@ Route::prefix('v1')->group(function () {
             });
 
             Route::prefix('user')->group(function () {
-                Route::get('/metaverses/{metaverseId}', [MetaverseUserSettingController::class, 'index']);
-                Route::post('/metaverses/{metaverseId}', [MetaverseUserSettingController::class, 'createOrUpdate']);
+                Route::get('/metaverses/{id}', [MetaverseUserSettingController::class, 'index']);
+                Route::post('/metaverses/{id}', [MetaverseUserSettingController::class, 'createOrUpdate']);
             });
         });
 
