@@ -23,7 +23,7 @@ class RouteServiceProvider extends ServiceProvider
     //frontend routes
     public const LOGIN_FRONT = '/login';
     public const REGISTER_FRONT = '/register';
-    public const HOME_FRONT = '/home';
+    public const HOME_FRONT = '/';
     public const EMAIL_VERIFICATION_FRONT = '/email/verify';
 
     /**
