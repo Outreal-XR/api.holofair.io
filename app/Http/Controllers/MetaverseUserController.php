@@ -91,7 +91,7 @@ class MetaverseUserController extends Controller
 
             $invited_userLink = env('FRONT_URL');
             if ($role === 'viewer') {
-                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+                $invited_userLink .= '/builder-public?code=' . $metaverse->id;
             } else {
                 $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
             }
@@ -178,7 +178,7 @@ class MetaverseUserController extends Controller
                         $this->sendInviteNotification(null, $email, $invited_user, $metaverse);
 
                         //email notification
-                        // $this->sendInviteEmail($email, null, $invited_user, $metaverse, $role);
+                        $this->sendInviteEmail($email, null, $invited_user, $metaverse, $role);
                     }
 
                     DB::commit();
@@ -195,7 +195,6 @@ class MetaverseUserController extends Controller
 
                             if ($invited_user) {
                                 if ($invited_user->role === 'editor') {
-
                                     continue;
                                 } else {
                                     $invited_user->delete();
@@ -210,7 +209,7 @@ class MetaverseUserController extends Controller
                             $this->sendInviteNotification($user, null, $invited_user, $metaverse);
 
                             //email notification
-                            // $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $role);
+                            $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $role);
                         }
                         DB::commit();
                     } catch (Exception $e) {
@@ -290,11 +289,6 @@ class MetaverseUserController extends Controller
                 break;
         }
 
-        $email_config = new SendSmtpEmail();
-        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
-        $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
-        $email_config->setSubject('Role updated in ' . $metaverse->name);
-
         DB::beginTransaction();
 
         try {
@@ -304,23 +298,10 @@ class MetaverseUserController extends Controller
             $invited_user->token_expiry = $request->role === 'viewer' ? null : Carbon::now()->addDays(7);
             $invited_user->save();
 
-            $invited_userLink = env('FRONT_URL');
-            if ($request->role === 'viewer') {
-                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
-            } else {
-                $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
-            }
-
-            $email_config->setHtmlContent(view('emails.invite-update', [
-                'metaverseName' => $metaverse->name,
-                'inviterName' => Auth::user()->fullName(),
-                'role' => $request->role,
-                "url" => $invited_userLink,
-            ])->render());
-
-            $this->brevoApiInstance->sendTransacEmail($email_config);
-
             DB::commit();
+
+            //send email
+            $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $request->role, 'Role updated in', 'emails.invite-update');
 
             return response()->json([
                 "message" => "Invite updated successfully",
@@ -360,11 +341,6 @@ class MetaverseUserController extends Controller
         $user = $invited_user->user;
         $metaverse = $invited_user->metaverse;
 
-        $email_config = new SendSmtpEmail();
-        $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
-        $email_config->setTo(array(array('email' => $user->email, 'name' => $user->fullName())));
-        $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
-
         DB::beginTransaction();
 
         try {
@@ -379,23 +355,10 @@ class MetaverseUserController extends Controller
                 $invited_user->save();
             }
 
-            $invited_userLink = env('FRONT_URL');
-            if ($invited_user->role === 'viewer') {
-                $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
-            } else {
-                $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
-            }
-
-            $email_config->setHtmlContent(view('emails.collaborator-invite', [
-                'metaverseName' => $metaverse->name,
-                'inviterName' => Auth::user()->fullName(),
-                'role' => $invited_user->role,
-                "url" => $invited_userLink,
-            ])->render());
-
-            $this->brevoApiInstance->sendTransacEmail($email_config);
-
             DB::commit();
+
+            //send email
+            $this->sendInviteEmail($user->email, $user->fullName(), $invited_user, $metaverse, $invited_user->role, 'Invitation to collaborate in', 'emails.collaborator-invite');
 
             return response()->json([
                 "message" => "Invite sent successfully",
@@ -822,21 +785,21 @@ class MetaverseUserController extends Controller
         return $invited_user;
     }
 
-    private function sendInviteEmail($email, $name, $invited_user, $metaverse, $role)
+    private function sendInviteEmail($email, $name, $invited_user, $metaverse, $role, $subject = 'Invitation to collaborate in', $view = 'emails.collaborator-invite')
     {
         $email_config = new SendSmtpEmail();
         $email_config->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));
         $email_config->setTo(array(array('email' => $email, 'name' => $name ? $name : $email)));
-        $email_config->setSubject('Invitation to collaborate in ' . $metaverse->name);
+        $email_config->setSubject($subject . ' ' . $metaverse->name);
 
         $invited_userLink = env('FRONT_URL');
         if ($role === 'viewer') {
-            $invited_userLink .= '/p/metaverses?code=' . $metaverse->id;
+            $invited_userLink .= '/builder-public?code=' . $metaverse->id;
         } else {
             $invited_userLink .= '/metaverses/' . $metaverse->id . '/invitations/' . $invited_user->id;
         }
 
-        $email_config->setHtmlContent(view('emails.collaborator-invite', [
+        $email_config->setHtmlContent(view($view, [
             'metaverseName' => $metaverse->name,
             'inviterName' => Auth::user()->fullName(),
             'role' => $role,

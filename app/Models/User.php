@@ -148,7 +148,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendPasswordResetNotification($token)
     {
-        $url = env('FRONT_URL') . '/password-change?token=' . $token;
+        $url = env('FRONT_URL') . '/reset-password?token=' . $token;
 
         $sendSmtpEmail = new SendSmtpEmail();
         $sendSmtpEmail->setSender(array('name' => 'HoloFair', 'email' => 'tech@holofair.io'));

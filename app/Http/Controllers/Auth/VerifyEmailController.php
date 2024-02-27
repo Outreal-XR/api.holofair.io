@@ -29,13 +29,13 @@ class VerifyEmailController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->away(env('FRONT_URL') . RouteServiceProvider::HOME_FRONT . '?verified=1');
+            return redirect()->away(env('FRONT_URL') . RouteServiceProvider::HOME_FRONT);
         }
 
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
         }
 
-        return redirect()->away(env('FRONT_URL') . RouteServiceProvider::HOME_FRONT . '?verified=1');
+        return redirect()->away(env('FRONT_URL') . RouteServiceProvider::HOME_FRONT);
     }
 }
