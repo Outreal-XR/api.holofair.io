@@ -265,9 +265,6 @@ class MetaverseController extends Controller
     {
         $metaverse = Metaverse::findOrfail($id);
 
-        //load relations
-        $metaverse->load(['settings', 'languages']);
-
         return response()->json([
             "data" => MetaverseResource::make($metaverse)
         ], 200);
