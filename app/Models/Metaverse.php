@@ -29,6 +29,11 @@ class Metaverse extends Model
         'mapped_user_settings'
     ];
 
+    protected $with = [
+        'settings',
+        'languages',
+    ];
+
     //relations
     public function addressables()
     {
